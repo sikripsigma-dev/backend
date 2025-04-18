@@ -1,0 +1,26 @@
+# === Go-related ===
+/bin/
+/build/
+/dist/
+/vendor/
+*.exe
+*.test
+*.out
+
+# === Dependency ===
+go.sum
+
+# === Environment & config ===
+.env
+*.env
+
+# === Editor / OS generated ===
+.DS_Store
+.vscode/
+.idea/
+
+# === Log files ===
+*.log
+
+# === Coverage/testing ===
+coverage.out
