@@ -71,6 +71,7 @@ func Connect() {
 		&models.Tag{},              // ss_m_tags
 		&models.ResearchCaseTag{},  // ss_t_research_case_tags (pivot)
 		&models.Application{},      // ss_t_applications
+		&models.CompanyUser{},      // ss_t_company_users (pivot)
 	)
 
 	if err != nil {

@@ -130,21 +130,33 @@ func User(c *fiber.Ctx) error {
 	// Ambil ID user dari klaim token
 	userId := claims.Subject
 
-	// Cari user berdasarkan ID
+	// Cari user berdasarkan ID dan preload relasi Company
 	var user models.User
-	if err := database.DB.Where("id = ?", userId).First(&user).Error; err != nil {
+	if err := database.DB.Preload("Company").Where("id = ?", userId).First(&user).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	// Membuat response JSON
+	userResponse := fiber.Map{
+		"id":    user.Id,
+		"nim":   user.Nim,
+		"name":  user.Name,
+		"phone": user.Phone,
+		"email": user.Email,
+	}
+
+	// Cek apakah ada data company
+	if user.Company != nil {
+		userResponse["company"] = fiber.Map{
+			"id":       user.Company.UserID,
+			"name":     user.Company.CompanyName,
+			"division": user.Company.Division,
+		}
 	}
 
 	return c.JSON(fiber.Map{
 		"message": "User data retrieved successfully",
-		"user": fiber.Map{
-			"id":    user.Id,
-			"nim":	 user.Nim,
-			"name":  user.Name,
-			"phone": user.Phone,
-			"email": user.Email,
-		},
+		"user":    userResponse,
 	})
 }
 

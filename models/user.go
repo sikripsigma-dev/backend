@@ -13,6 +13,7 @@ type User struct {
 	Phone	 string `gorm:"unique"`
 	Email    string `gorm:"unique"`
 	Password string
+	Company *CompanyUser `gorm:"foreignKey:UserID;references:Id"`
 }
 
 // Hook BeforeCreate untuk generate UUID sebelum insert ke database
