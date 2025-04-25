@@ -1,8 +1,8 @@
 package main
 
 import (
-	"Skripsigma-BE/database"
-	"Skripsigma-BE/routes"
+	"Skripsigma-BE/internal/config"
+	"Skripsigma-BE/internal/routes"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,10 +11,10 @@ import (
 
 func main() {
 	// Menghubungkan ke database
-	database.Connect()
+	config.ConnectDB()
 
 	// Pastikan koneksi database tertutup saat aplikasi berhenti
-	sqlDB, err := database.DB.DB()
+	sqlDB, err := config.DB.DB()
 	if err != nil {
 		log.Fatal("Failed to get DB object", err)
 	}
