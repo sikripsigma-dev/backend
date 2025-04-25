@@ -20,5 +20,5 @@
 
 3. Jalankan aplikasi:
     ```bash
-    go run main.go
+    go run [your main.go file location]
     ```
