@@ -17,18 +17,21 @@ func Setup(app *fiber.App) {
 	researchCaseRepo := repository.NewResearchCaseRepository(config.DB)
 	companyRepo := repository.NewCompanyRepository(config.DB)
 	tagRepo := repository.NewTagRepository(config.DB)
+	roleRepo := repository.NewRoleRepository(config.DB)
 
 	// Services
 	authService := service.NewAuthService(userRepo)
 	researchCaseService := service.NewResearchCaseService(researchCaseRepo)
 	companyService := service.NewCompanyService(companyRepo)
 	tagService := service.NewTagService(tagRepo)
+	roleService := service.NewRoleService(roleRepo)
 
 	// handlers
 	authHandler := handler.NewAuthHandler(authService)
 	researchCaseHandler := handler.NewResearchCaseHandler(researchCaseService)
 	companyHandler := handler.NewCompanyHandler(companyService)
 	tagHandler := handler.NewTagHandler(tagService)
+	roleHandler := handler.NewRoleHandler(roleService)
 
 	// Auth routes
 	app.Post("/api/register", authHandler.Register)
@@ -49,4 +52,9 @@ func Setup(app *fiber.App) {
 	app.Post("/api/tag", tagHandler.CreateTag)
 	app.Get("/api/tag", tagHandler.GetAllTags)
 	app.Get("/api/tag/:id", tagHandler.GetTagByID)
+
+	// Role routes
+	app.Post("/api/role", roleHandler.CreateRole)
+	app.Get("/api/role", roleHandler.GetAllRoles)
+	app.Get("/api/role/:id", roleHandler.GetRoleByID)
 }

@@ -58,7 +58,7 @@ func ConnectDB() {
 
 	log.Println("✅ Database connected successfully!")
 
-	// autoMigrate()
+	autoMigrate()
 }
 
 func autoMigrate() {
@@ -70,6 +70,7 @@ func autoMigrate() {
 		&models.ResearchCaseTag{},
 		&models.Application{},
 		&models.CompanyUser{},
+		&models.Role{},
 	)
 
 	if err != nil {
