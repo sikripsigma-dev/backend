@@ -13,6 +13,7 @@ type User struct {
 	Phone	 string `gorm:"unique"`
 	Email    string `gorm:"unique"`
 	Password string
+	RoleId   string `gorm:"not null"`
 	Company *CompanyUser `gorm:"foreignKey:UserID;references:Id"`
 }
 
