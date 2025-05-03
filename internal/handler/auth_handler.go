@@ -88,3 +88,18 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 	})
 }
 
+
+func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	c.Cookie(&fiber.Cookie{
+		Name: "token",
+		Value: "",
+		Expires: time.Now().Add(-1 * time.Hour),
+		HTTPOnly: true,
+		Secure: false,
+		SameSite: "Lax",
+	})
+
+	return c.JSON(fiber.Map{
+		"message": "Logout successful",
+	})
+}
