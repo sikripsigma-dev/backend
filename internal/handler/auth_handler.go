@@ -2,6 +2,7 @@ package handler
 
 import (
 	"Skripsigma-BE/internal/dto"
+	"Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/service"
 	"time"
 
@@ -61,17 +62,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
-	cookie := c.Cookies("token")
-	if cookie == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Missing authentication token",
-		})
-	}
-
-	user, err := h.authService.GetUserByToken(cookie)
-	if err != nil {
-		return err
-	}
+	
+	user := c.Locals("user").(*models.User)
 
 	userResponse := fiber.Map{
 		"id":    user.Id,
@@ -79,6 +71,7 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 		"name":  user.Name,
 		"phone": user.Phone,
 		"email": user.Email,
+		"role":  user.RoleId,
 	}
 
 	if user.Company != nil {
