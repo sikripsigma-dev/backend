@@ -3,6 +3,7 @@ package routes
 import (
 	"Skripsigma-BE/internal/config"
 	"Skripsigma-BE/internal/handler"
+	"Skripsigma-BE/internal/middleware"
 	"Skripsigma-BE/internal/repository"
 	"Skripsigma-BE/internal/service"
 
@@ -18,6 +19,7 @@ func Setup(app *fiber.App) {
 	companyRepo := repository.NewCompanyRepository(config.DB)
 	tagRepo := repository.NewTagRepository(config.DB)
 	roleRepo := repository.NewRoleRepository(config.DB)
+	applicationRepo := repository.NewApplicationRepository(config.DB)
 
 	// Services
 	authService := service.NewAuthService(userRepo)
@@ -25,6 +27,7 @@ func Setup(app *fiber.App) {
 	companyService := service.NewCompanyService(companyRepo)
 	tagService := service.NewTagService(tagRepo)
 	roleService := service.NewRoleService(roleRepo)
+	applicationService := service.NewApplicationService(applicationRepo, roleRepo, researchCaseRepo)
 
 	// handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -32,11 +35,15 @@ func Setup(app *fiber.App) {
 	companyHandler := handler.NewCompanyHandler(companyService)
 	tagHandler := handler.NewTagHandler(tagService)
 	roleHandler := handler.NewRoleHandler(roleService)
+	applicationHandler := handler.NewApplicationHandler(applicationService)
+
+	// Middleware
+	authMiddleware := middleware.AuthMiddleware(authService)
 
 	// Auth routes
 	app.Post("/api/register", authHandler.Register)
 	app.Post("/api/login", authHandler.Login)
-	app.Get("/api/user", authHandler.GetUserData)
+	app.Get("/api/user", authMiddleware, authHandler.GetUserData)
 
 	// Research Case routes
 	app.Post("/api/research-case", researchCaseHandler.CreateResearchCase)
@@ -57,4 +64,10 @@ func Setup(app *fiber.App) {
 	app.Post("/api/role", roleHandler.CreateRole)
 	app.Get("/api/role", roleHandler.GetAllRoles)
 	app.Get("/api/role/:id", roleHandler.GetRoleByID)
+
+	// Application routes
+	app.Post("/api/application", authMiddleware, applicationHandler.CreateApplication)
+	// app.Post("/api/application", middleware.StudentOnly(), applicationHandler.CreateApplication)
+	// app.Get("/api/application", applicationHandler.GetAllApplications)
+	// app.Get("/api/application/:id", applicationHandler.GetApplicationByID)
 }
