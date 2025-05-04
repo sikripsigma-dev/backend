@@ -5,16 +5,26 @@ import (
 	"Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/repository"
 	"fmt"
+	"time"
 )
 
 type ApplicationService struct {
 	applicationRepo         repository.ApplicationRepository
 	roleRepo                repository.RoleRepository
 	researchCaseRepository  repository.ResearchCaseRepository
+	userRepository           repository.UserRepository
 }
 
-func NewApplicationService(applicationRepo repository.ApplicationRepository, roleRepo repository.RoleRepository, researchCaseRepo repository.ResearchCaseRepository) *ApplicationService {
-	return &ApplicationService{applicationRepo, roleRepo, researchCaseRepo}
+func NewApplicationService(applicationRepo repository.ApplicationRepository, 
+	roleRepo repository.RoleRepository, 
+	researchCaseRepo repository.ResearchCaseRepository, 
+	userRepo repository.UserRepository,
+	) *ApplicationService {
+	return &ApplicationService{
+		applicationRepo, 
+		roleRepo, 
+		researchCaseRepo, 
+		userRepo} 
 }
 
 func (s *ApplicationService) CreateApplication(req dto.CreateApplicationRequest) (*models.Application, error) {
@@ -42,4 +52,25 @@ func (s *ApplicationService) CreateApplication(req dto.CreateApplicationRequest)
 	}
 
 	return application, nil
+}
+
+func (s *ApplicationService) ProcessApplication(applicationID string, status string, userID string) error {
+	application, err := s.applicationRepo.GetByID(applicationID)
+	if err != nil {
+		return fmt.Errorf("Application not found")
+	}
+
+	user, err := s.userRepository.GetWithCompanyByID(userID)
+	if err != nil {
+		return fmt.Errorf("User not found")
+	}
+	if user.Company == nil {
+		return fmt.Errorf("You are not authorized to process this application")
+	}
+
+	application.Status = status
+	application.ProcessedAt = time.Now().Unix()
+	application.ProcessedBy = user.Company.UserID // atau user.Company.UserID tergantung desain
+
+	return s.applicationRepo.Update(application)
 }

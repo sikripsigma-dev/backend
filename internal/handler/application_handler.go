@@ -36,3 +36,22 @@ func (h *ApplicationHandler) CreateApplication(c *fiber.Ctx) error {
 		"application": application,
 	})
 }
+
+func (h *ApplicationHandler) ProcessApplication(c *fiber.Ctx) error {
+	var req dto.ProcessApplicationRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	applicationID := c.Params("id")
+	user := c.Locals("user").(*models.User)
+
+	err := h.applicationService.ProcessApplication(applicationID, req.Status, user.Id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Application processed successfully",
+	})
+}

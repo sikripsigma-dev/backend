@@ -6,6 +6,10 @@ type CreateApplicationRequest struct {
 	Status         string `json:"status" validate:"required"`
 }
 
+type ProcessApplicationRequest struct {
+	Status string `json:"status" validate:"required"`
+}
+
 type ApplicationResponse struct {
 	ID             uint   `json:"id"`
 	ResearchCaseID string `json:"research_case_id"`
