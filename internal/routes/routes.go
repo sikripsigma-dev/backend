@@ -23,14 +23,16 @@ func Setup(app *fiber.App) {
 
 	// Services
 	authService := service.NewAuthService(userRepo)
+	UserService := service.NewUserService(userRepo)
 	researchCaseService := service.NewResearchCaseService(researchCaseRepo)
 	companyService := service.NewCompanyService(companyRepo)
 	tagService := service.NewTagService(tagRepo)
 	roleService := service.NewRoleService(roleRepo)
-	applicationService := service.NewApplicationService(applicationRepo, roleRepo, researchCaseRepo)
+	applicationService := service.NewApplicationService(applicationRepo, roleRepo, researchCaseRepo, userRepo)
 
 	// handlers
 	authHandler := handler.NewAuthHandler(authService)
+	userHandler := handler.NewUserHandler(UserService)
 	researchCaseHandler := handler.NewResearchCaseHandler(researchCaseService)
 	companyHandler := handler.NewCompanyHandler(companyService)
 	tagHandler := handler.NewTagHandler(tagService)
@@ -44,6 +46,11 @@ func Setup(app *fiber.App) {
 	app.Post("/api/register", authHandler.Register)
 	app.Post("/api/login", authHandler.Login)
 	app.Get("/api/user", authMiddleware, authHandler.GetUserData)
+	// logout
+	app.Post("/api/logout", authMiddleware, authHandler.Logout)
+
+	// User routes
+	app.Put("/api/profile", authMiddleware, userHandler.UpdateProfile)
 
 	// Research Case routes
 	app.Post("/api/research-case", researchCaseHandler.CreateResearchCase)
@@ -67,6 +74,7 @@ func Setup(app *fiber.App) {
 
 	// Application routes
 	app.Post("/api/application", authMiddleware, applicationHandler.CreateApplication)
+	app.Post("/api/review-application/:id", authMiddleware, applicationHandler.ProcessApplication)
 	// app.Post("/api/application", middleware.StudentOnly(), applicationHandler.CreateApplication)
 	// app.Get("/api/application", applicationHandler.GetAllApplications)
 	// app.Get("/api/application/:id", applicationHandler.GetApplicationByID)
