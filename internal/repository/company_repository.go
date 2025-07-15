@@ -10,6 +10,7 @@ type CompanyRepository interface {
 	Create(company *models.Company) error
 	GetByID(id string) (*models.Company, error)
 	GetAll() ([]models.Company, error)
+	Update(company *models.Company) error
 }
 
 type companyRepository struct {
@@ -38,5 +39,10 @@ func (r *companyRepository) GetAll() ([]models.Company, error) {
 		return nil, err
 	}
 	return companies, nil
+}
+
+// update company
+func (r *companyRepository) Update(company *models.Company) error {
+	return r.db.Save(company).Error
 }
 

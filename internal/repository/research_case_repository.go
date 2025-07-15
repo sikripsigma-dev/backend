@@ -12,6 +12,8 @@ type ResearchCaseRepository interface {
 	GetAll() ([]models.ResearchCase, error)
 	AssociateTags(researchCaseID string, tagIDs []string) error
 	FindByIDWithRelations(id string, out *models.ResearchCase) error
+	GetByCompanyID(companyID string) ([]models.ResearchCase, error)
+	Update(researchCase *models.ResearchCase) error
 }
 
 type researchCaseRepository struct {
@@ -26,20 +28,32 @@ func (r *researchCaseRepository) Create(researchCase *models.ResearchCase) error
 	return r.db.Create(researchCase).Error
 }
 
+// func (r *researchCaseRepository) GetByID(id string) (*models.ResearchCase, error) {
+// 	var rc models.ResearchCase
+// 	if err := r.db.First(&rc, "id = ?", id).Error; err != nil {
+// 		return nil, err
+// 	}
+// 	return &rc, nil
+// }
+
 func (r *researchCaseRepository) GetByID(id string) (*models.ResearchCase, error) {
 	var rc models.ResearchCase
-	if err := r.db.First(&rc, "id = ?", id).Error; err != nil {
+	if err := r.db.Preload("Company").First(&rc, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &rc, nil
 }
 
 func (r *researchCaseRepository) GetAll() ([]models.ResearchCase, error) {
-	var cases []models.ResearchCase
-	if err := r.db.Find(&cases).Error; err != nil {
+	var researchCases []models.ResearchCase
+	err := r.db.
+		Preload("Company").
+		Preload("Tags").
+		Find(&researchCases).Error
+	if err != nil {
 		return nil, err
 	}
-	return cases, nil
+	return researchCases, nil
 }
 
 func (r *researchCaseRepository) AssociateTags(researchCaseID string, tagIDs []string) error {
@@ -62,3 +76,16 @@ func (r *researchCaseRepository) FindByIDWithRelations(id string, out *models.Re
 		First(out, "id = ?", id).Error
 }
 
+// get by company id
+func (r *researchCaseRepository) GetByCompanyID(companyID string) ([]models.ResearchCase, error) {
+	var cases []models.ResearchCase
+	if err := r.db.Where("company_id = ?", companyID).Find(&cases).Error; err != nil {
+		return nil, err
+	}
+	return cases, nil
+}
+
+// update research case
+func (r *researchCaseRepository) Update(researchCase *models.ResearchCase) error {
+	return r.db.Save(researchCase).Error
+}

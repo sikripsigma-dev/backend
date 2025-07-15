@@ -2,6 +2,7 @@ package handler
 
 import (
 	"Skripsigma-BE/internal/dto"
+	"Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/service"
 	"time"
 
@@ -61,17 +62,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
-	cookie := c.Cookies("token")
-	if cookie == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Missing authentication token",
-		})
-	}
-
-	user, err := h.authService.GetUserByToken(cookie)
-	if err != nil {
-		return err
-	}
+	
+	user := c.Locals("user").(*models.User)
 
 	userResponse := fiber.Map{
 		"id":    user.Id,
@@ -79,13 +71,33 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 		"name":  user.Name,
 		"phone": user.Phone,
 		"email": user.Email,
+		"role":  user.RoleId,
+		"image": user.Image,
 	}
 
 	if user.Company != nil {
 		userResponse["company"] = fiber.Map{
-			"id":       user.Company.UserID,
-			"name":     user.Company.CompanyName,
+			"id":       user.Company.CompanyID,
+			// "name":     user.Company.CompanyName,
 			"division": user.Company.Division,
+		}
+	}
+
+	if user.Student != nil {
+		userResponse["Student"] = fiber.Map{
+			"univ_id": user.Student.UniversityID,
+			"univ_name": user.Student.University.Name,
+			"nim": user.Student.Nim,
+			"jurusan": user.Student.Jurusan,
+			"gpa": user.Student.Gpa,
+		}
+	}
+
+	if user.Supervisor != nil {
+		userResponse["Supervisor"] = fiber.Map{
+			"univ_id": user.Supervisor.UniversityID,
+			"univ_name": user.Supervisor.University.Name,
+			"nidn": user.Supervisor.Nidn,
 		}
 	}
 
@@ -95,3 +107,18 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 	})
 }
 
+
+func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	c.Cookie(&fiber.Cookie{
+		Name: "token",
+		Value: "",
+		Expires: time.Now().Add(-1 * time.Hour),
+		HTTPOnly: true,
+		Secure: false,
+		SameSite: "Lax",
+	})
+
+	return c.JSON(fiber.Map{
+		"message": "Logout successful",
+	})
+}

@@ -66,3 +66,30 @@ func (s *ResearchCaseService) GetResearchCaseByID(id string) (*models.ResearchCa
 }
 
 
+func (s *ResearchCaseService) GetResearchCasesByCompanyID(companyID string) ([]models.ResearchCase, error) {
+	researchCases, err := s.researchCaseRepo.GetByCompanyID(companyID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to fetch research cases for company: %v", err)
+	}
+	return researchCases, nil
+}
+
+func (s *ResearchCaseService) UpdateResearchCase(id string, req dto.UpdateResearchCaseRequest) (*models.ResearchCase, error) {
+	researchCase, err := s.researchCaseRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("Research case not found: %v", err)
+	}
+
+	researchCase.Title = req.Title
+	researchCase.Description = req.Description
+	researchCase.Field = req.Field
+	researchCase.Location = req.Location
+	researchCase.Duration = req.Duration
+	researchCase.EducationRequirement = req.EducationRequirement
+
+	if err := s.researchCaseRepo.Update(researchCase); err != nil {
+		return nil, fmt.Errorf("Failed to update research case: %v", err)
+	}
+
+	return researchCase, nil
+}

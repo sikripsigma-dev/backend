@@ -16,6 +16,15 @@ type CreateResearchCaseRequest struct {
 	TagIDs     []string `json:"tag_ids"`
 }
 
+type UpdateResearchCaseRequest struct {
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	Field       string `json:"field" validate:"required"`
+	Location    string `json:"location" validate:"required"`
+	Duration    string `json:"duration" validate:"required"`
+	EducationRequirement string `json:"education_requirement" validate:"required"`
+}
+
 func (r *CreateResearchCaseRequest) Validate() error {
 	if strings.TrimSpace(r.Title) == "" {
 		return errors.New("title is required")

@@ -23,6 +23,8 @@ func main() {
 	// Membuat instance Fiber
 	app := fiber.New()
 
+	routes.WebSocketRoute(app)
+
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "http://localhost:3000",
 		AllowCredentials: true,
@@ -30,6 +32,7 @@ func main() {
 
 	// Setup routes
 	routes.Setup(app)
+	app.Static("/images", "./public/images")
 
 	// Menjalankan server
 	log.Fatal(app.Listen(":3001"))
