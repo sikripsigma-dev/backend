@@ -4,7 +4,12 @@ import (
 	"Skripsigma-BE/internal/dto"
 	// "Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/repository"
+	"Skripsigma-BE/internal/util"
 	"fmt"
+
+	"mime/multipart"
+	"os"
+	"path/filepath"
 )
 
 type UserService struct {
@@ -54,21 +59,33 @@ func (s *UserService) UpdateAdminProfile(userID string, req dto.UpdateAdminProfi
 	return s.userRepository.Update(user)
 }
 
+func (s *UserService) UpdateProfilePhoto(userID string, file *multipart.FileHeader) (string, error) {
+	dir := "./public/images/user"
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, os.ModePerm)
+	}
 
-// func (s *UserService) UpdateStudentProfile(userID string, req dto.UpdateStudentProfileRequest) (*models.User, error) {
-// 	user, err := s.userRepository.GetByID(userID)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("User not found")
-// 	}
+	ext := filepath.Ext(file.Filename)
+	fileName := fmt.Sprintf("%s%s", userID, ext)
+	filePath := filepath.Join(dir, fileName)
 
-// 	// Update user fields with the request data
-// 	user.Name = req.Name
-// 	user.Email = req.Email
-// 	user.Phone = req.Phone
+	// Hapus file lama
+	pattern := filepath.Join(dir, fmt.Sprintf("%s.*", userID))
+	matches, _ := filepath.Glob(pattern)
+	for _, match := range matches {
+		os.Remove(match)
+	}
 
-// 	if err := s.userRepository.Update(user); err != nil {
-// 		return nil, err
-// 	}
+	// Simpan file baru
+	if err := util.SaveUploadedFile(file, filePath); err != nil {
+		return "", fmt.Errorf("failed to save file: %w", err)
+	}
 
-// 	return user, nil
-// }
+	// Update DB pakai URL untuk FE
+	imageURL := "/images/user/" + fileName
+	if err := s.userRepository.UpdateImage(userID, imageURL); err != nil {
+		return "", fmt.Errorf("failed to update DB: %w", err)
+	}
+
+	return imageURL, nil
+}

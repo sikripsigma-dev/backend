@@ -57,3 +57,22 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "Profile updated successfully"})
 }
+
+// update photo profile
+func (h *UserHandler) UpdateProfilePhoto(c *fiber.Ctx) error {
+	user := c.Locals("user").(*models.User)
+	file, err := c.FormFile("photo")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
+	}
+
+	imageURL, err := h.userService.UpdateProfilePhoto(user.Id, file)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"url": imageURL,
+		"message": "Profile photo updated successfully",
+	})
+}
