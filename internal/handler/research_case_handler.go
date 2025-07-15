@@ -50,3 +50,33 @@ func (h *ResearchCaseHandler) GetResearchCaseByID(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"research_case": researchCase})
 }
+
+// get research cases by company ID
+func (h *ResearchCaseHandler) GetResearchCasesByCompanyID(c *fiber.Ctx) error {
+	companyID := c.Params("company_id")
+
+	researchCases, err := h.researchCaseService.GetResearchCasesByCompanyID(companyID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"research_cases": researchCases})
+}
+
+func (h *ResearchCaseHandler) UpdateResearchCase(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var req dto.UpdateResearchCaseRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	researchCase, err := h.researchCaseService.UpdateResearchCase(id, req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message":       "Research case updated successfully",
+		"research_case": researchCase,
+	})
+}
