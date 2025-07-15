@@ -47,3 +47,21 @@ func (s* CompanyService) GetAllCompanies() ([]models.Company, error) {
 	}
 	return comapnies, nil
 }
+
+func (s *CompanyService) UpdateCompany(id string, req dto.UpdateCompanyRequest) (*models.Company, error) {
+	company, err := s.companyRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	company.Name = req.Name
+	company.Email = req.Email
+	company.Phone = req.Phone
+	company.Address = req.Address
+	company.Description = req.Description
+
+	if err := s.companyRepo.Update(company); err != nil {
+		return nil, err
+	}
+	return company, nil
+}

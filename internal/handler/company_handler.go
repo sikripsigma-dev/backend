@@ -50,3 +50,21 @@ func (h *CompanyHandler) GetAllCompanies(c *fiber.Ctx) error {
 	}
 	return c.JSON(fiber.Map{"companies": companies})
 }
+
+func (h *CompanyHandler) UpdateCompany(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var req dto.UpdateCompanyRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	company, err := h.companyService.UpdateCompany(id, req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message":  "Company updated successfully",
+		"company": company,
+	})
+}
