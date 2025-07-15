@@ -72,13 +72,32 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 		"phone": user.Phone,
 		"email": user.Email,
 		"role":  user.RoleId,
+		"image": user.Image,
 	}
 
 	if user.Company != nil {
 		userResponse["company"] = fiber.Map{
-			"id":       user.Company.UserID,
-			"name":     user.Company.CompanyName,
+			"id":       user.Company.CompanyID,
+			// "name":     user.Company.CompanyName,
 			"division": user.Company.Division,
+		}
+	}
+
+	if user.Student != nil {
+		userResponse["Student"] = fiber.Map{
+			"univ_id": user.Student.UniversityID,
+			"univ_name": user.Student.University.Name,
+			"nim": user.Student.Nim,
+			"jurusan": user.Student.Jurusan,
+			"gpa": user.Student.Gpa,
+		}
+	}
+
+	if user.Supervisor != nil {
+		userResponse["Supervisor"] = fiber.Map{
+			"univ_id": user.Supervisor.UniversityID,
+			"univ_name": user.Supervisor.University.Name,
+			"nidn": user.Supervisor.Nidn,
 		}
 	}
 

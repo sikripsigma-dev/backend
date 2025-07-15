@@ -91,7 +91,7 @@ func (s *AuthService) GetUserByToken(tokenString string) (*models.User, error) {
 
 	userId := claims.Subject
 
-	user, err := s.userRepo.GetWithCompanyByID(userId)
+	user, err := s.userRepo.GetWithRelationsByID(userId)
 	if err != nil {
 		return nil, fiber.NewError(fiber.StatusNotFound, "User not found")
 	}
