@@ -14,6 +14,7 @@ type UserRepository interface {
 	Update(user *models.User) error
 	UpdateImage(userID string, imageURL string) error
 	GetWithRelationsByID(id string) (*models.User, error)
+	GetAll() ([]*models.User, error)
 }
 
 type userRepository struct {
@@ -76,3 +77,12 @@ func (r *userRepository) UpdateImage(userID string, imageURL string) error {
 		Where("id = ?", userID).
 		Update("image", imageURL).Error
 }
+
+func (r *userRepository) GetAll() ([]*models.User, error) {
+	var users []*models.User
+	if err := r.db.Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+

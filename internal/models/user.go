@@ -13,6 +13,7 @@ type User struct {
 	Email    string `gorm:"unique"`
 	Password string
 	RoleId   uint   `gorm:"not null"`
+	Status   string `gorm:"type:enum('active','inactive');default:'inactive'"`
 	Image    string `gorm:"default:null"`
 	Company  *CompanyUser `gorm:"foreignKey:UserID;references:Id"`
 	Student  *StudentUser `gorm:"foreignKey:UserID;references:Id"`

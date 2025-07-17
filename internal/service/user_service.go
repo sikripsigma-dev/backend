@@ -89,3 +89,40 @@ func (s *UserService) UpdateProfilePhoto(userID string, file *multipart.FileHead
 
 	return imageURL, nil
 }
+
+func (s *UserService) GetAllUsers() ([]dto.UserResponse, error) {
+	users, err := s.userRepository.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []dto.UserResponse
+	for _, u := range users {
+		result = append(result, dto.UserResponse{
+			Id:    u.Id,
+			Name:  u.Name,
+			Email: u.Email,
+			Phone: u.Phone,
+			Role:  u.RoleId,
+			Status: u.Status,
+			Image: u.Image,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *UserService) UpdateUser(userID string, req dto.UpdateUserRequest) error {
+	user, err := s.userRepository.GetByID(userID)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+
+	user.Name = req.Name
+	user.Email = req.Email
+	user.Phone = req.Phone
+	user.Status = req.Status
+
+	return s.userRepository.Update(user)
+}
+

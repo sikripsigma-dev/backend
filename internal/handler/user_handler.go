@@ -76,3 +76,46 @@ func (h *UserHandler) UpdateProfilePhoto(c *fiber.Ctx) error {
 		"message": "Profile photo updated successfully",
 	})
 }
+
+
+// get all users
+func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
+	users, err := h.userService.GetAllUsers()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to retrieve users",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"users": users,
+	})
+}
+
+func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
+	id := c.Params("id") // pastikan route kamu: PUT /api/users/:id
+
+	var req dto.UpdateUserRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid request body",
+		})
+	}
+
+	// if err := h.validator.Struct(&req); err != nil {
+	// 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	// 		"error": err.Error(),
+	// 	})
+	// }
+
+	if err := h.userService.UpdateUser(id, req); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "user updated successfully",
+	})
+}
