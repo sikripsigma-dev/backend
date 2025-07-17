@@ -4,6 +4,8 @@ import (
 	"Skripsigma-BE/internal/dto"
 	"Skripsigma-BE/internal/service"
 
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -21,6 +23,8 @@ func (h *CompanyHandler) CreateCompany(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
+
+	log.Printf("Parsed Request: %+v\n", req)
 
 	company, err := h.companyService.CreateCompany(req)
 	if err != nil {
