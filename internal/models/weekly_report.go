@@ -9,6 +9,7 @@ import (
 type WeeklyReport struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	StudentID string    `json:"student_id"`
+	ResearchCaseID string    `json:"research_case_id"`
 	Week      int       `json:"week"`
 	Progress  string    `json:"progress"`
 	Plans     string    `json:"plans"`
@@ -20,6 +21,7 @@ type WeeklyReport struct {
 	Files     string    `json:"files"` // ← JSON string, bukan array langsung
 
 	Student User `gorm:"foreignKey:StudentID;references:Id"`
+	ResearchCase ResearchCase `gorm:"foreignKey:ResearchCaseID;references:ID"`
 }
 func (WeeklyReport) TableName() string {
 	return "ss_t_weekly_reports"
