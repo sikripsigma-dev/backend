@@ -33,6 +33,7 @@ func main() {
 	// Setup routes
 	routes.Setup(app)
 	app.Static("/images", "./public/images")
+	app.Static("/documents", "./public/documents")
 
 	// Menjalankan server
 	log.Fatal(app.Listen(":3001"))

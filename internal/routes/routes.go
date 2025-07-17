@@ -28,6 +28,8 @@ func Setup(app *fiber.App) {
 	userCreateRepo := repository.NewUserCreateRepository(config.DB)
 	userCreateLogRepo := repository.NewUserCreateLogRepository(config.DB)
 	assignmentRepo := repository.NewAssignmentRepository(config.DB)
+	supervisorRepo := repository.NewSupervisorRepository(config.DB)
+	studentDocumentRepo := repository.NewStudentDocumentRepository(config.DB)
 
 	// Services
 	authService := service.NewAuthService(userRepo)
@@ -45,6 +47,8 @@ func Setup(app *fiber.App) {
 	userCreateService := service.NewUserCreateService(userCreateRepo)
 	userCreateLogService := service.NewUserCreateLogService(userCreateLogRepo)
 	assignmentService := service.NewAssignmentService(assignmentRepo)
+	supervisorService := service.NewSupervisorService(supervisorRepo)
+	studentDocumentService := service.NewStudentDocumentService(studentDocumentRepo, userRepo)
 
 	// handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -61,6 +65,8 @@ func Setup(app *fiber.App) {
 	universityHandler := handler.NewUniversityHandler(universityService)
 	userCreateHandler := handler.NewUserCreateHandler(userCreateService, userCreateLogService)
 	assignmentHandler := handler.NewAssignmentHandler(assignmentService)
+	supervisorHandler := handler.NewSupervisorHandler(supervisorService)
+	studentDocumentHandler := handler.NewStudentDocumentHandler(studentDocumentService)
 
 	// Middleware
 	authMiddleware := middleware.AuthMiddleware(authService)
@@ -75,6 +81,8 @@ func Setup(app *fiber.App) {
 	// User routes
 	app.Put("/api/profile", authMiddleware, userHandler.UpdateProfile)
 	app.Put("/api/profile/photo", authMiddleware, userHandler.UpdateProfilePhoto)
+	app.Get("/api/users", authMiddleware, userHandler.GetAllUsers)
+	app.Put("/api/user/:id", authMiddleware, userHandler.UpdateUser)
 
 	// Research Case routes
 	app.Post("/api/research-case", researchCaseHandler.CreateResearchCase)
@@ -139,6 +147,15 @@ func Setup(app *fiber.App) {
 
 	// assignment
 	app.Get("/api/assignment/active", authMiddleware, assignmentHandler.GetMyActiveAssignment)
+
+	// supervisor
+	app.Get("/api/supervisor/students", authMiddleware, supervisorHandler.GetStudentsBySupervisor)
+
+	// student document
+	app.Get("/api/student/document", authMiddleware, studentDocumentHandler.GetMyDocuments)
+	app.Get("/api/student/document/:student_id", authMiddleware, studentDocumentHandler.GetStudentDocumentByUserID)
+	app.Post("/api/student/document", authMiddleware, studentDocumentHandler.Create)
+
 
 
 }
