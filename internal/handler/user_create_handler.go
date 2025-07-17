@@ -7,10 +7,13 @@ import (
 
 	"Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/service"
+	"Skripsigma-BE/internal/util"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+
+	"fmt"
 )
 
 type UserCreateHandler struct {
@@ -134,6 +137,18 @@ func (h *UserCreateHandler) CreateUser(c *fiber.Ctx) error {
 		log.Printf("Failed to create user creation log: %v", err)
 		// Don't fail the request if log creation fails
 	}
+
+	go func() {
+		m := util.NewMailer()
+		subject := "Akun Anda Berhasil Dibuat - Skripsigma"
+		body := fmt.Sprintf("Halo %s,\n\nAkun Anda telah berhasil dibuat di platform Skripsigma.\nSilakan login menggunakan \nEmail: %s\nPassword: %s", req.Name, req.Email, req.Password)
+
+		if err := m.Send(req.Email, subject, body); err != nil {
+			log.Printf("❌ Gagal kirim email ke %s: %v", req.Email, err)
+		} else {
+			log.Printf("📧 Email berhasil dikirim ke %s", req.Email)
+		}
+	}()
 
 	return c.Status(http.StatusCreated).JSON(fiber.Map{
 		"message": "User created successfully",
