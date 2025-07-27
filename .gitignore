@@ -3,6 +3,7 @@
 /build/
 /dist/
 /vendor/
+/public/
 *.exe
 *.test
 *.out
