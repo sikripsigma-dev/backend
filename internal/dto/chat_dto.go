@@ -24,15 +24,19 @@ type ChatMessageSimple struct {
 }
 
 type ChatRoomsWithLatestMessage struct {
-	ID            string `json:"id"`
-	StudentID     string `json:"student_id"`
-	CompanyID     string `json:"company_id"`
-	CompanyName   string `json:"company_name"`
-	LastMessage   string `json:"last_message,omitempty"`
-	LastMessageAt string `json:"last_message_at,omitempty"`
-	CreatedAt     string `json:"created_at"`
-	UpdatedAt     string `json:"updated_at"`
-	UnreadCount   int    `json:"unread_count"`
+	ID              string  `json:"id"`
+	InitiatorID     string  `json:"initiator_id"`
+	TargetUserID    *string `json:"target_user_id,omitempty"`
+	TargetCompanyID *string `json:"target_company_id,omitempty"`
+	LastMessage     string  `json:"last_message,omitempty"`
+	LastMessageAt   string  `json:"last_message_at,omitempty"`
+	UnreadCount     int     `json:"unread_count"`
+	Image           string  `json:image`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+
+	WithName string `json:"with_name"`
+	WithType string `json:"with_type"`
 }
 
 type ChatMessageResponse struct {

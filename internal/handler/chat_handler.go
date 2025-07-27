@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/service"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,15 +18,29 @@ func NewChatHandler (chatService *service.ChatService) *ChatHandler {
 }
 
 
-func (h *ChatHandler) GetChatRoomsByStudentID(c *fiber.Ctx) error {
-	studentID := c.Params("id")
-	if studentID == "" {
+func (h *ChatHandler) CreateChatRoom(c *fiber.Ctx) error {
+	type CreateRoomRequest struct {
+		TargetUserID    *string `json:"target_user_id"`
+		TargetCompanyID *string `json:"target_company_id"`
+	}
+
+	var body CreateRoomRequest
+	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "student ID is required",
+			"error": "invalid request body",
 		})
 	}
 
-	chatRooms, err := h.chatService.GetChatRoomsByStudentID(studentID)
+	user := c.Locals("user").(*models.User)
+	initiatorID := user.Id
+
+	if body.TargetUserID == nil && body.TargetCompanyID == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "target_user_id atau target_company_id harus diisi",
+		})
+	}
+
+	room, err := h.chatService.CreateOrGetChatRoom(initiatorID, body.TargetUserID, body.TargetCompanyID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -33,19 +48,22 @@ func (h *ChatHandler) GetChatRoomsByStudentID(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"data": chatRooms,
+		"data": room,
 	})
 }
 
-func (h *ChatHandler) GetChatRoomByCompanyID(c *fiber.Ctx) error{
-	companyID := c.Params("id")
-	if companyID == "" {
+func (h *ChatHandler) GetChatRoomsByUserID(c *fiber.Ctx) error {
+	// userID := c.Params("id")
+	user := c.Locals("user").(*models.User)
+	userID := user.Id
+
+	if userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "student ID is required",
+			"error": "user ID is required",
 		})
 	}
 
-	chatRooms, err := h.chatService.GetChatRoomsByCompanyID(companyID)
+	chatRooms, err := h.chatService.GetChatRoomsByUserID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

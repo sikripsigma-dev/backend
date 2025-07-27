@@ -5,39 +5,36 @@ import (
 )
 
 type ChatRooms struct {
-	ID        string    `gorm:"type:char(36);primaryKey"`
-	StudentID string    `gorm:"type:char(36);not null"`
-	CompanyID string    `gorm:"type:char(36);not null"` // tetap NOT NULL
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID              string    `gorm:"type:char(36);primaryKey"`
+	InitiatorID     string    `gorm:"type:char(36);not null"`
+	TargetUserID    *string   `gorm:"type:char(36)"`
+	TargetCompanyID *string   `gorm:"type:char(36)"`
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 
-	UnreadCount int `gorm:"-"`
+	Initiator     User     `gorm:"foreignKey:InitiatorID;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	TargetUser    *User    `gorm:"foreignKey:TargetUserID;references:Id;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	TargetCompany *Company `gorm:"foreignKey:TargetCompanyID;references:Id;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 
-	Student User    `gorm:"foreignKey:StudentID;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Company Company `gorm:"foreignKey:CompanyID;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"` // GANTI DARI SET NULL KE CASCADE
-
-	Messages []ChatMessage `gorm:"foreignKey:RoomID"`
+	Messages    []ChatMessage `gorm:"foreignKey:RoomID"`
+	UnreadCount int           `gorm:"-"`
 }
 
-
-type ChatMessage struct {
-	ID        string    `gorm:"type:char(36);primaryKey"`
-	RoomID    string    `gorm:"type:char(36);not null"`
-	SenderID  *string   `gorm:"type:char(36)"` // bisa null
-	SenderType string   `gorm:"type:enum('student','company');not null"`
-	Message   string    `gorm:"type:text;not null"`
-	IsRead    bool      `gorm:"default:false"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-
-	// Relasi (jika mahasiswa)
-	Sender  *User      `gorm:"foreignKey:SenderID;references:Id"`
-	Room    ChatRooms  `gorm:"foreignKey:RoomID;references:ID"`
-}
-
-
-// Table names
 func (ChatRooms) TableName() string {
 	return "ss_t_chat_rooms"
+}
+
+type ChatMessage struct {
+	ID         string    `gorm:"type:char(36);primaryKey"`
+	RoomID     string    `gorm:"type:char(36);not null"`
+	SenderID   *string   `gorm:"type:char(36)"`
+	SenderType string    `gorm:"type:enum('student','company','supervisor');not null"`
+	Message    string    `gorm:"type:text;not null"`
+	IsRead     bool      `gorm:"default:false"`
+	CreatedAt  time.Time `gorm:"autoCreateTime"`
+
+	Sender *User     `gorm:"foreignKey:SenderID;references:Id"`
+	Room   ChatRooms `gorm:"foreignKey:RoomID;references:ID"`
 }
 
 func (ChatMessage) TableName() string {
