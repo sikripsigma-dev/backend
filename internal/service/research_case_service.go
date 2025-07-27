@@ -93,3 +93,12 @@ func (s *ResearchCaseService) UpdateResearchCase(id string, req dto.UpdateResear
 
 	return researchCase, nil
 }
+
+func (s *ResearchCaseService) SetResearchCaseActiveStatus(id string, isActive bool) error {
+	_, err := s.researchCaseRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("Research case not found: %v", err)
+	}
+	return s.researchCaseRepo.UpdateActiveStatus(id, isActive)
+}
+

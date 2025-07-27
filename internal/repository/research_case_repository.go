@@ -14,6 +14,7 @@ type ResearchCaseRepository interface {
 	FindByIDWithRelations(id string, out *models.ResearchCase) error
 	GetByCompanyID(companyID string) ([]models.ResearchCase, error)
 	Update(researchCase *models.ResearchCase) error
+	UpdateActiveStatus(id string, isActive bool) error
 }
 
 type researchCaseRepository struct {
@@ -28,14 +29,6 @@ func (r *researchCaseRepository) Create(researchCase *models.ResearchCase) error
 	return r.db.Create(researchCase).Error
 }
 
-// func (r *researchCaseRepository) GetByID(id string) (*models.ResearchCase, error) {
-// 	var rc models.ResearchCase
-// 	if err := r.db.First(&rc, "id = ?", id).Error; err != nil {
-// 		return nil, err
-// 	}
-// 	return &rc, nil
-// }
-
 func (r *researchCaseRepository) GetByID(id string) (*models.ResearchCase, error) {
 	var rc models.ResearchCase
 	if err := r.db.Preload("Company").First(&rc, "id = ?", id).Error; err != nil {
@@ -47,6 +40,7 @@ func (r *researchCaseRepository) GetByID(id string) (*models.ResearchCase, error
 func (r *researchCaseRepository) GetAll() ([]models.ResearchCase, error) {
 	var researchCases []models.ResearchCase
 	err := r.db.
+		Where("is_active = ?", true).
 		Preload("Company").
 		Preload("Tags").
 		Find(&researchCases).Error
@@ -88,4 +82,10 @@ func (r *researchCaseRepository) GetByCompanyID(companyID string) ([]models.Rese
 // update research case
 func (r *researchCaseRepository) Update(researchCase *models.ResearchCase) error {
 	return r.db.Save(researchCase).Error
+}
+
+func (r *researchCaseRepository) UpdateActiveStatus(id string, isActive bool) error {
+	return r.db.Model(&models.ResearchCase{}).
+		Where("id = ?", id).
+		Update("is_active", isActive).Error
 }

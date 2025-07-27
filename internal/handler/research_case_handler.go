@@ -80,3 +80,26 @@ func (h *ResearchCaseHandler) UpdateResearchCase(c *fiber.Ctx) error {
 		"research_case": researchCase,
 	})
 }
+
+func (h *ResearchCaseHandler) SetActiveStatus(c *fiber.Ctx) error {
+	id := c.Params("id")
+	type request struct {
+		IsActive bool `json:"is_active"`
+	}
+	var body request
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if err := h.researchCaseService.SetResearchCaseActiveStatus(id, body.IsActive); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Status berhasil diperbarui",
+	})
+}

@@ -17,6 +17,7 @@ type ResearchCase struct {
 	EducationRequirement string    `json:"education_requirement"`
 	Duration             string    `json:"duration"`
 	Description          string    `json:"description"`
+	IsActive 			 bool 	   `gorm:"default:true" json:"is_active"`
 	CreatedAt            time.Time `gorm:"autoCreateTime" json:"created_at"`
 
 	// Relasi ke Company
