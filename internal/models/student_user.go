@@ -6,6 +6,8 @@ type StudentUser struct {
 	Jurusan      string  `gorm:"type:varchar(100);not null"`
 	Nim          string  `gorm:"type:varchar(20);not null;unique"`
 	Gpa          float64 `gorm:"type:decimal(3,2);not null"`
+	LinkedIn     string  `gorm:"type:varchar(100);default:null"`
+	Description  string  `gorm:"type:text;default:null"`
 	SupervisorID string  `gorm:"type:char(36)"`
 
 	User       User       `gorm:"foreignKey:UserID;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

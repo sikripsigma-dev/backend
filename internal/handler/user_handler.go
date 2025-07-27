@@ -42,6 +42,16 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
+	case constants.RoleSupervisor:
+		var req dto.UpdateSupervisorProfileRequest
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
+		}
+		if err := h.userService.UpdateSupervisorProfile(user.Id, req); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+
 	case constants.RoleAdmin:
 		var req dto.UpdateAdminProfileRequest
 		if err := c.BodyParser(&req); err != nil {
@@ -117,5 +127,40 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "user updated successfully",
+	})
+}
+
+func (h *UserHandler) GetStudentDetail(c *fiber.Ctx) error {
+	userID := c.Params("id")
+
+	user, err := h.userService.GetStudentDetailByID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Mahasiswa tidak ditemukan",
+		})
+	}
+
+	// Build response
+	docs := []fiber.Map{}
+	for _, doc := range user.StudentDocuments {
+		docs = append(docs, fiber.Map{
+			"type": doc.Type,
+			"path": doc.Path,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"id":         user.Id,
+		"name":       user.Name,
+		"email":      user.Email,
+		"phone":      user.Phone,
+		"nim":        user.Student.Nim,
+		"study_program": user.Student.Jurusan,
+		"faculty":       user.Student.University.Name,
+		"status":        user.Status,
+		"image":         user.Image,
+		"skills":        []string{}, // optionally from another table
+		"portfolio":     user.Student.Description,
+		"documents":     docs,
 	})
 }

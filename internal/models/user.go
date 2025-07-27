@@ -14,10 +14,12 @@ type User struct {
 	Password string
 	RoleId   uint   `gorm:"not null"`
 	Status   string `gorm:"type:enum('active','inactive');default:'inactive'"`
+	IsVerified bool `gorm:"default:false"`
 	Image    string `gorm:"default:null"`
 	Company  *CompanyUser `gorm:"foreignKey:UserID;references:Id"`
 	Student  *StudentUser `gorm:"foreignKey:UserID;references:Id"`
 	Supervisor *SupervisorUser `gorm:"foreignKey:UserID;references:Id"`
+	StudentDocuments []StudentDocument `gorm:"foreignKey:UserID;references:Id"`
 }
 
 func (user *User) BeforeCreate(tx *gorm.DB) (err error) {

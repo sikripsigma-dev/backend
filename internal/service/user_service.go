@@ -2,6 +2,7 @@ package service
 
 import (
 	"Skripsigma-BE/internal/dto"
+	"Skripsigma-BE/internal/models"
 	// "Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/repository"
 	"Skripsigma-BE/internal/util"
@@ -10,40 +11,121 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+
+	"gorm.io/gorm"
 )
 
 type UserService struct {
 	userRepository repository.UserRepository
+	db             *gorm.DB
 }
 
-func NewUserService(userRepository repository.UserRepository) *UserService {
-	return &UserService{userRepository}
+func NewUserService(userRepository repository.UserRepository, db *gorm.DB) *UserService {
+	return &UserService{userRepository, db}
 }
 
 func (s *UserService) UpdateStudentProfile(userID string, req dto.UpdateStudentProfileRequest) error {
-	user, err := s.userRepository.GetByID(userID)
+	// Ambil user lengkap dengan relasi
+	user, err := s.userRepository.GetWithRelationsByID(userID)
 	if err != nil {
-		return fmt.Errorf("User not found")
+		return fmt.Errorf("user not found")
 	}
 
-	user.Name = req.Name
-	user.Email = req.Email
-	user.Phone = req.Phone
+	// Pastikan student relasi tersedia
+	if user.Student == nil {
+		return fmt.Errorf("student profile not found")
+	}
 
-	return s.userRepository.Update(user)
+	// Mulai transaction
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// Update tabel users
+		user.Name = req.Name
+		user.Email = req.Email
+		user.Phone = req.Phone
+
+		if err := tx.Save(&user).Error; err != nil {
+			return err
+		}
+
+		// Update tabel student_users
+		student := user.Student
+		student.Nim = req.Nim
+		student.Jurusan = req.Jurusan
+		student.Gpa = req.Gpa
+		student.UniversityID = req.UniversityID
+		student.LinkedIn = req.LinkedIn
+		student.Description = req.Description
+
+		if err := tx.Save(student).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (s *UserService) UpdateUserCompanyProfile(userID string, req dto.UpdateUserCompanyProfileRequest) error {
-	user, err := s.userRepository.GetByID(userID)
+	// Ambil user + relasi
+	user, err := s.userRepository.GetWithRelationsByID(userID)
 	if err != nil {
-		return fmt.Errorf("User not found")
+		return fmt.Errorf("user not found")
 	}
 
-	user.Name = req.Name
-	user.Email = req.Email
-	user.Phone = req.Phone
+	if user.Company == nil {
+		return fmt.Errorf("company profile not found")
+	}
 
-	return s.userRepository.Update(user)
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// update tabel user
+		user.Name = req.Name
+		user.Email = req.Email
+		user.Phone = req.Phone
+
+		if err := tx.Save(&user).Error; err != nil {
+			return err
+		}
+
+		// update tabel company_user
+		company := user.Company
+		company.Division = req.Division
+		// company.CompanyID = req.CompanyID
+
+		if err := tx.Save(company).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (s *UserService) UpdateSupervisorProfile(userID string, req dto.UpdateSupervisorProfileRequest) error {
+	user, err := s.userRepository.GetWithRelationsByID(userID)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+
+	if user.Supervisor == nil {
+		return fmt.Errorf("supervisor profile not found")
+	}
+
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		user.Name = req.Name
+		user.Email = req.Email
+		user.Phone = req.Phone
+
+		if err := tx.Save(&user).Error; err != nil {
+			return err
+		}
+
+		supervisor := user.Supervisor
+		supervisor.Nidn = req.NIDN
+
+		if err := tx.Save(supervisor).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (s *UserService) UpdateAdminProfile(userID string, req dto.UpdateAdminProfileRequest) error {
@@ -124,5 +206,9 @@ func (s *UserService) UpdateUser(userID string, req dto.UpdateUserRequest) error
 	user.Status = req.Status
 
 	return s.userRepository.Update(user)
+}
+
+func (s *UserService) GetStudentDetailByID(userID string) (*models.User, error) {
+	return s.userRepository.GetStudentDetailByID(userID)
 }
 

@@ -90,6 +90,7 @@ func (h *UserCreateHandler) CreateUser(c *fiber.Ctx) error {
 		Phone:    req.Phone,
 		RoleId:   req.RoleId,
 		Password: string(hashedPassword),
+		IsVerified: true,
 	}
 
 	// Prepare role-specific models
