@@ -9,6 +9,7 @@ import (
 type CompanyWeeklyReportRepository interface {
 	Create(report *models.CompanyWeeklyReport) error
 	GetByStudent(studentID, researchCaseID string) ([]models.CompanyWeeklyReport, error)
+	GetByID(id uint) (*models.CompanyWeeklyReport, error)
 }
 
 type companyWeeklyReportRepo struct {
@@ -33,4 +34,12 @@ func (r *companyWeeklyReportRepo) GetByStudent(studentID string, researchCaseID 
 		Preload("ResearchCase").
 		Find(&reports).Error
 	return reports, err
+}
+
+func (r *companyWeeklyReportRepo) GetByID(id uint) (*models.CompanyWeeklyReport, error) {
+	var report models.CompanyWeeklyReport
+	if err := r.db.Where("id = ?", id).First(&report).Error; err != nil {
+		return nil, err
+	}
+	return &report, nil
 }
