@@ -24,23 +24,27 @@ func Setup(app *fiber.App) {
 	chatRepo := repository.NewChatRepository(config.DB)
 	notificationRepo := repository.NewNotificationRepository(config.DB)
 	weeklyReportRepo := repository.NewWeeklyReportRepository(config.DB)
+	companyWeeklyRepo := repository.NewCompanyWeeklyReportRepository(config.DB)
 	universityRepo := repository.NewUniversityRepository(config.DB)
 	userCreateRepo := repository.NewUserCreateRepository(config.DB)
 	userCreateLogRepo := repository.NewUserCreateLogRepository(config.DB)
 	assignmentRepo := repository.NewAssignmentRepository(config.DB)
 	supervisorRepo := repository.NewSupervisorRepository(config.DB)
 	studentDocumentRepo := repository.NewStudentDocumentRepository(config.DB)
+	monitoringProgressRepo := repository.NewMonitoringProgressRepository(config.DB)
+	authTokenRepo := repository.NewAuthTokenRepository(config.DB)
 
+	chatService := service.NewChatService(chatRepo)
 	// Services
-	authService := service.NewAuthService(userRepo)
-	UserService := service.NewUserService(userRepo)
+	authService := service.NewAuthService(userRepo, authTokenRepo, chatService)
+	UserService := service.NewUserService(userRepo, config.DB)
 	researchCaseService := service.NewResearchCaseService(researchCaseRepo)
 	companyService := service.NewCompanyService(companyRepo)
 	tagService := service.NewTagService(tagRepo)
 	roleService := service.NewRoleService(roleRepo)
-	applicationService := service.NewApplicationService(applicationRepo, roleRepo, researchCaseRepo, userRepo, assignmentRepo)
+	applicationService := service.NewApplicationService(applicationRepo, roleRepo, researchCaseRepo, userRepo, assignmentRepo, chatService)
 	menuService := service.NewMenuService(menuRepo, assignmentRepo, config.DB)
-	chatService := service.NewChatService(chatRepo)
+	// chatService := service.NewChatService(chatRepo)
 	notificationService := service.NewNotificationService(notificationRepo)
 	weeklyReportService := service.NewWeeklyReportService(weeklyReportRepo)
 	universityService := service.NewUniversityService(universityRepo)
@@ -49,6 +53,7 @@ func Setup(app *fiber.App) {
 	assignmentService := service.NewAssignmentService(assignmentRepo)
 	supervisorService := service.NewSupervisorService(supervisorRepo)
 	studentDocumentService := service.NewStudentDocumentService(studentDocumentRepo, userRepo)
+	monitoringProgressService := service.NewMonitoringProgressService(monitoringProgressRepo, weeklyReportRepo,companyWeeklyRepo, notificationService, userRepo)
 
 	// handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -61,18 +66,20 @@ func Setup(app *fiber.App) {
 	menuHandler := handler.NewMenuHandler(menuService)
 	chatHandler := handler.NewChatHandler(chatService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
-	weeklyReportHandler := handler.NewWeeklyReportHandler(weeklyReportService)
+	weeklyReportHandler := handler.NewWeeklyReportHandler(weeklyReportService, notificationService, researchCaseService)
 	universityHandler := handler.NewUniversityHandler(universityService)
 	userCreateHandler := handler.NewUserCreateHandler(userCreateService, userCreateLogService)
 	assignmentHandler := handler.NewAssignmentHandler(assignmentService)
 	supervisorHandler := handler.NewSupervisorHandler(supervisorService)
 	studentDocumentHandler := handler.NewStudentDocumentHandler(studentDocumentService)
+	monitoringProgressHandler := handler.NewMonitoringProgressHandler(monitoringProgressService)
 
 	// Middleware
 	authMiddleware := middleware.AuthMiddleware(authService)
 
 	// Auth routes
 	app.Post("/api/register", authHandler.Register)
+	app.Get("/api/auth/verify-email", authHandler.VerifyEmail)
 	app.Post("/api/login", authHandler.Login)
 	app.Get("/api/user", authMiddleware, authHandler.GetUserData)
 	// logout
@@ -83,6 +90,7 @@ func Setup(app *fiber.App) {
 	app.Put("/api/profile/photo", authMiddleware, userHandler.UpdateProfilePhoto)
 	app.Get("/api/users", authMiddleware, userHandler.GetAllUsers)
 	app.Put("/api/user/:id", authMiddleware, userHandler.UpdateUser)
+	app.Get("/api/detail/student/:id", authMiddleware, userHandler.GetStudentDetail)
 
 	// Research Case routes
 	app.Post("/api/research-case", researchCaseHandler.CreateResearchCase)
@@ -90,6 +98,7 @@ func Setup(app *fiber.App) {
 	app.Get("/api/research-case/:id", researchCaseHandler.GetResearchCaseByID)
 	app.Get("/api/research-case/company/:company_id", researchCaseHandler.GetResearchCasesByCompanyID)
 	app.Put("/api/research-case/:id", researchCaseHandler.UpdateResearchCase)
+	app.Put("/api/research-case/:id/status", researchCaseHandler.SetActiveStatus)
 
 	// Company routes
 	app.Post("/api/company", companyHandler.CreateCompany)
@@ -114,7 +123,7 @@ func Setup(app *fiber.App) {
 	app.Get("/api/application/research-case/:id", authMiddleware, applicationHandler.GetApplicationsByResearchCaseID)
 	app.Get("/api/application/student/:id", authMiddleware, applicationHandler.GetApplicationsByStudentID)
 	// cek application exist
-	app.Get("/api/application/check", authMiddleware, applicationHandler.CheckApplicationExists)
+	app.Get("/api/application/check", authMiddleware, applicationHandler.CheckApplication)
 	// app.Post("/api/application", middleware.StudentOnly(), applicationHandler.CreateApplication)
 	// app.Get("/api/application", applicationHandler.GetAllApplications)
 	// app.Get("/api/application/:id", applicationHandler.GetApplicationByID)
@@ -123,9 +132,11 @@ func Setup(app *fiber.App) {
 	app.Post("/api/menu", authMiddleware, menuHandler.CreateMenu)
 	app.Get("/api/menu", authMiddleware, menuHandler.GetAllMenu)
 
-	app.Get("/api/chatrooms/student/:id", authMiddleware, chatHandler.GetChatRoomsByStudentID)
-	app.Get("/api/chatrooms/company/:id", authMiddleware, chatHandler.GetChatRoomByCompanyID)
+	// app.Get("/api/chatrooms/student/:id", authMiddleware, chatHandler.GetChatRoomsByStudentID)
+	// app.Get("/api/chatrooms/company/:id", authMiddleware, chatHandler.GetChatRoomByCompanyID)
+	app.Get("/api/my-chatrooms/", authMiddleware, chatHandler.GetChatRoomsByUserID)
 	app.Get("/api/chatrooms/messages/:room_id", authMiddleware, chatHandler.GetMessagesByRoomID)
+	app.Post("/api/my-chatroom/", authMiddleware, chatHandler.CreateChatRoom)
 
 	// Notification routes
 	app.Get("/api/notifications", authMiddleware, notificationHandler.GetNotifications)
@@ -135,8 +146,10 @@ func Setup(app *fiber.App) {
 
 	// Weekly Report routes
 	app.Post("/api/weekly-report", authMiddleware, weeklyReportHandler.SubmitWeeklyReport)
+	app.Post("/api/weekly-report/company", authMiddleware, weeklyReportHandler.SubmitCompanyWeeklyReport)
 	app.Get("/api/weekly-report", authMiddleware, weeklyReportHandler.GetWeeklyReports)
 	app.Get("/api/weekly-report/bysupervisor", authMiddleware, weeklyReportHandler.GetWeeklyReportsForSupervisor)
+	app.Get("/api/weekly-report/bycompany", authMiddleware, weeklyReportHandler.GetWeeklyReportsForCompany)
 
 	// university
 	app.Get("/api/university", authMiddleware, universityHandler.GetAll)
@@ -147,6 +160,8 @@ func Setup(app *fiber.App) {
 
 	// assignment
 	app.Get("/api/assignment/active", authMiddleware, assignmentHandler.GetMyActiveAssignment)
+	app.Get("/api/assignment/company", authMiddleware, assignmentHandler.GetActiveAssignmentsByCompany)
+	app.Put("/api/assignment/:id/status", authMiddleware, assignmentHandler.UpdateAssignmentStatus)
 
 	// supervisor
 	app.Get("/api/supervisor/students", authMiddleware, supervisorHandler.GetStudentsBySupervisor)
@@ -156,6 +171,10 @@ func Setup(app *fiber.App) {
 	app.Get("/api/student/document/:student_id", authMiddleware, studentDocumentHandler.GetStudentDocumentByUserID)
 	app.Post("/api/student/document", authMiddleware, studentDocumentHandler.Create)
 
+
+	// momitoring progress
+	app.Post("/api/feedback/supervisor", authMiddleware, monitoringProgressHandler.GiveFeedback)
+	app.Post("/api/feedback/company", authMiddleware, monitoringProgressHandler.GiveFeedbackCompany)
 
 
 }
