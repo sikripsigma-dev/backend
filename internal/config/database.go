@@ -58,7 +58,7 @@ func ConnectDB() {
 
 	log.Println("✅ Database connected successfully!")
 
-	// autoMigrate()
+	autoMigrate()
 }
 
 func autoMigrate() {
@@ -87,6 +87,8 @@ func autoMigrate() {
 		&models.SupervisorMonitoringProgress{},
 		&models.CompanyMonitoringProgress{},
 		&models.AuthToken{},
+		&models.StudyProgram{},
+		&models.HeadstudyUser{},
 	)
 
 	if err != nil {
