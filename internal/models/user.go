@@ -19,6 +19,7 @@ type User struct {
 	Company  *CompanyUser `gorm:"foreignKey:UserID;references:Id"`
 	Student  *StudentUser `gorm:"foreignKey:UserID;references:Id"`
 	Supervisor *SupervisorUser `gorm:"foreignKey:UserID;references:Id"`
+	Headstudy *HeadstudyUser `gorm:"foreignKey:UserID;references:Id"`
 	StudentDocuments []StudentDocument `gorm:"foreignKey:UserID;references:Id"`
 }
 

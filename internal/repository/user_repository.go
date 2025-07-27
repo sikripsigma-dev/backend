@@ -57,6 +57,9 @@ func (r *userRepository) GetWithRelationsByID(id string) (*models.User, error) {
 		Preload("Student.University").
 		Preload("Supervisor").
 		Preload("Supervisor.University").
+		Preload("Headstudy").
+		Preload("Headstudy.University").
+		Preload("Headstudy.StudyProgram").
 		Where("id = ?", id).
 		First(&user).Error; err != nil {
 		return nil, err

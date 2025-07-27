@@ -101,6 +101,15 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 		}
 	}
 
+	if user.Headstudy != nil {
+		userResponse["Headstudy"] = fiber.Map{
+			"univ_id": user.Headstudy.UniversityID,
+			"univ_name": user.Headstudy.University.Name,
+			"study_program_id": user.Headstudy.StudyProgramID,
+			"study_program_name": user.Headstudy.StudyProgram.ID,
+		}
+	}
+
 	return c.JSON(fiber.Map{
 		"message": "User data retrieved successfully",
 		"user":    userResponse,
