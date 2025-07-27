@@ -10,6 +10,9 @@ type WeeklyReportRepository interface {
 	Create(report *models.WeeklyReport) error
 	GetByStudent(studentID string) ([]models.WeeklyReport, error)
 	GetByUniversity(universityID string) ([]models.WeeklyReport, error)
+	CreateCompanyReport(report *models.CompanyWeeklyReport) error
+	GetByCompanyID(companyID string) ([]models.CompanyWeeklyReport, error)
+	GetByID(id uint) (*models.WeeklyReport, error)
 }
 
 type weeklyReportRepo struct {
@@ -23,6 +26,11 @@ func NewWeeklyReportRepository(db *gorm.DB) WeeklyReportRepository {
 func (r *weeklyReportRepo) Create(report *models.WeeklyReport) error {
 	return r.db.Create(report).Error
 }
+
+func (r *weeklyReportRepo) CreateCompanyReport(report *models.CompanyWeeklyReport) error {
+	return r.db.Create(report).Error
+}
+
 
 func (r *weeklyReportRepo) GetByStudent(studentID string) ([]models.WeeklyReport, error) {
 	var reports []models.WeeklyReport
@@ -45,3 +53,27 @@ func (r *weeklyReportRepo) GetByUniversity(universityID string) ([]models.Weekly
 
 	return reports, err
 }
+
+func (r *weeklyReportRepo) GetByCompanyID(companyID string) ([]models.CompanyWeeklyReport, error) {
+	var reports []models.CompanyWeeklyReport
+
+	err := r.db.
+		Joins("JOIN ss_t_research_cases rc ON rc.id = ss_t_company_weekly_reports.research_case_id").
+		Joins("JOIN ss_student_user su ON su.user_id = ss_t_company_weekly_reports.student_id").
+		Where("rc.company_id = ?", companyID).
+		Preload("Student").
+		Preload("ResearchCase").
+		Find(&reports).Error
+
+	return reports, err
+}
+
+func (r *weeklyReportRepo) GetByID(id uint) (*models.WeeklyReport, error) {
+	var report models.WeeklyReport
+	if err := r.db.Where("id = ?", id).First(&report).Error; err != nil {
+		return nil, err
+	}
+	return &report, nil
+}
+
+
