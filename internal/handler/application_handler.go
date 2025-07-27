@@ -7,6 +7,7 @@ import (
 	"Skripsigma-BE/internal/util"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -30,30 +31,6 @@ func NewApplicationHandler(
 	}
 }
 
-// func (h *ApplicationHandler) CreateApplication(c *fiber.Ctx) error {
-// 	var req dto.CreateApplicationRequest
-// 	if err := c.BodyParser(&req); err != nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
-// 	}
-
-// 	user := c.Locals("user").(*models.User)
-// 	application, err := h.applicationService.CreateApplication(req, user.Id)
-// 	if err != nil {
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-// 	}
-
-// 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-// 		"message": "Applied successfully",
-// 		"application": dto.ApplyResponse{
-// 			ID:             application.ID,
-// 			ResearchCaseID: application.ResearchCaseID,
-// 			UserID:         application.UserID,
-// 			Status:         application.Status,
-// 			AppliedAt:      application.AppliedAt,
-// 			ProcessedAt:    application.ProcessedAt,
-// 		},
-// 	})	
-// }
 
 func (h *ApplicationHandler) CreateApplication(c *fiber.Ctx) error {
 	// 1. Parse JSON body ke struct
@@ -122,9 +99,16 @@ func (h *ApplicationHandler) CreateApplication(c *fiber.Ctx) error {
 
 
 // cek application exist
-func (h *ApplicationHandler) CheckApplicationExists(c *fiber.Ctx) error {
+func (h *ApplicationHandler) CheckApplication(c *fiber.Ctx) error {
 	user := c.Locals("user").(*models.User)
 	researchCaseID := c.Query("research_case_id")
+
+	assigned, err := h.applicationService.CheckStudentAlreadyAssigned(user.Id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Gagal mengecek status penugasan",
+		})
+	}
 
 	exists, err := h.applicationService.CheckApplicationExists(user.Id, researchCaseID)
 	if err != nil {
@@ -132,47 +116,150 @@ func (h *ApplicationHandler) CheckApplicationExists(c *fiber.Ctx) error {
 			"error": "Gagal mengecek aplikasi",
 		})
 	}
+	// if assigned {
+	// 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	// 		"error": "Mahasiswa sudah aktif dalam studi kasus lain dan tidak bisa apply lagi",
+	// 	})
+	// }
 
 	return c.JSON(fiber.Map{
-		"applied": exists,
+		"applied":  exists,
+		"assigned": assigned,
+		"eligible": !exists && !assigned,
 	})
 }
 
 func (h *ApplicationHandler) ProcessApplication(c *fiber.Ctx) error {
+	// 1. Parse body request
 	var req dto.ProcessApplicationRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+	if req.Status == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Status is required",
+		})
 	}
 
+	// 2. Ambil ID aplikasi dan user login
 	applicationID := c.Params("id")
 	user := c.Locals("user").(*models.User)
 
-	err := h.applicationService.ProcessApplication(applicationID, req.Status, user.Id)
+	// 3. Proses aplikasi
+	application, err := h.applicationService.ProcessApplication(applicationID, req.Status, user.Id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
+	// 4. Ambil data studi kasus untuk notifikasi (judul)
+	researchCase, err := h.researchCaseService.GetResearchCaseByID(application.ResearchCaseID)
+	caseTitle := "(judul tidak ditemukan)"
+	if err == nil && researchCase.Title != "" {
+		caseTitle = researchCase.Title
+	}
+
+	// 5. Siapkan notifikasi ke mahasiswa
+	statusLabel := map[string]string{
+		"accepted":      "diterima",
+		"rejected":      "ditolak",
+		"need_revision": "memerlukan revisi",
+	}[strings.ToLower(application.Status)]
+	if statusLabel == "" {
+		statusLabel = application.Status // fallback
+	}
+
+	notif := &models.Notification{
+		UserID:  &application.UserID,
+		Type:    "application_review",
+		Message: fmt.Sprintf("Aplikasi Anda untuk studi kasus '%s' telah %s", caseTitle, statusLabel),
+		Metadata: util.JSONB{
+			"application_id": application.ID,
+			"case_id":        application.ResearchCaseID,
+			"case_title":     caseTitle,
+			"status":         application.Status,
+			"reviewer_id":    user.Id,
+		},
+	}
+
+	// 6. Simpan notifikasi (error tidak memblokir)
+	_ = h.notificationService.CreateNotification(notif)
+
+	// 7. Kirim response sukses
 	return c.JSON(fiber.Map{
-		"message": "Application processed successfully",
+		"message":     "Application processed successfully",
+		"application": application, // atau mapping ke DTO jika ingin lebih aman
 	})
 }
 
+// func (h *ApplicationHandler) RespondToApplication(c *fiber.Ctx) error {
+// 	var req dto.ProcessApplicationRequest
+// 	if err := c.BodyParser(&req); err != nil {
+// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+// 	}
+
+// 	applicationID := c.Params("id")
+// 	user := c.Locals("user").(*models.User)
+
+// 	err := h.applicationService.RespondToApplication(applicationID, req.Status, user.Id)
+// 	if err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+// 	}
+
+// 	return c.JSON(fiber.Map{
+// 		"message": "Application responded successfully",
+// 	})
+// }
+
 func (h *ApplicationHandler) RespondToApplication(c *fiber.Ctx) error {
+	// 1. Ambil dan parse body
 	var req dto.ProcessApplicationRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
 	}
 
+	// 2. Param ID dan user login (mahasiswa)
 	applicationID := c.Params("id")
 	user := c.Locals("user").(*models.User)
 
-	err := h.applicationService.RespondToApplication(applicationID, req.Status, user.Id)
+	// 3. Proses via service (ubah status jadi "confirmed")
+	application, err := h.applicationService.RespondToApplication(applicationID, req.Status, user.Id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
+	// 4. Ambil info studi kasus untuk ambil perusahaan + judul
+	researchCase, err := h.researchCaseService.GetResearchCaseByID(application.ResearchCaseID)
+	if err == nil && researchCase.CompanyID != "" {
+		companyID := researchCase.CompanyID
+		caseTitle := researchCase.Title
+
+		// 5. Kirim notifikasi ke perusahaan
+		notif := &models.Notification{
+			CompanyID: &companyID,
+			Type:      "application_confirmed", // sesuaikan dengan enum/type kamu
+			Message:   fmt.Sprintf("%s telah mengonfirmasi penugasan untuk studi kasus '%s'", user.Name, caseTitle),
+			Metadata: util.JSONB{
+				"application_id": application.ID,
+				"case_id":        researchCase.ID,
+				"case_title":     caseTitle,
+				"student_name":   user.Name,
+			},
+		}
+		_ = h.notificationService.CreateNotification(notif) // abaikan error
+	}
+
+	// 6. Response ke frontend
 	return c.JSON(fiber.Map{
-		"message": "Application responded successfully",
+		"message":     "Application responded successfully",
+		"application": application,
 	})
 }
 
