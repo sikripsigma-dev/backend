@@ -67,7 +67,7 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 
 	userResponse := fiber.Map{
 		"id":    user.Id,
-		"nim":   user.Nim,
+		// "nim":   user.Nim,
 		"name":  user.Name,
 		"phone": user.Phone,
 		"email": user.Email,
@@ -104,6 +104,23 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "User data retrieved successfully",
 		"user":    userResponse,
+	})
+}
+
+func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Token is required"})
+	}
+
+	authToken, err := h.authService.VerifyEmailToken(token)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Verifikasi email berhasil",
+		"user_id": authToken.UserID,
 	})
 }
 

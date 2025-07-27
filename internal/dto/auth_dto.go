@@ -1,11 +1,16 @@
 package dto
 
 type RegisterRequest struct {
-	Nim      string `json:"nim"`
-	Name     string `json:"name"`
-	Phone    string `json:"phone"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Name            string `json:"name"`
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	Phone           string `json:"phone"`
+	SupervisorEmail string `json:"supervisor_email"`
+
+	UniversityID string  `json:"university_id"`
+	Jurusan      string  `json:"jurusan"`
+	Gpa          float64 `json:"gpa"`
+	Nim          string  `json:"nim"`
 }
 
 type LoginRequest struct {
