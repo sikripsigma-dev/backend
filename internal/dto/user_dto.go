@@ -15,4 +15,8 @@ type UpdateUserRequest struct {
 	Email  string `json:"email" validate:"required,email"`
 	Phone  string `json:"phone" validate:"required"`
 	Status string `json:"status"`
+	// StudyProgramID *string `json:"study_program_id,omitempty"`
+	StudyProgramID *string `json:"study_program_id,omitempty"`
+	UniversityID   *string `json:"university_id,omitempty"`
+	Nidn           *string `json:"nidn,omitempty"`
 }

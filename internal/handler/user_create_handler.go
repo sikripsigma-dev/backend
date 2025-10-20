@@ -29,16 +29,32 @@ func NewUserCreateHandler(userSvc service.UserCreateService, logSvc service.User
 }
 
 func (h *UserCreateHandler) CreateUser(c *fiber.Ctx) error {
+	// type Request struct {
+	// 	Name         string `json:"name"`
+	// 	Email        string `json:"email"`
+	// 	Phone        string `json:"phone"`
+	// 	RoleId       uint   `json:"role_id"`
+	// 	Password     string `json:"password"`
+	// 	Nidn         string `json:"nidn"`
+	// 	UniversityID string `json:"university_id"`
+	// 	CompanyID    string `json:"company_id"`
+	// 	Division     string `json:"division"`
+	// }
+
 	type Request struct {
-		Name         string `json:"name"`
-		Email        string `json:"email"`
-		Phone        string `json:"phone"`
-		RoleId       uint   `json:"role_id"`
-		Password     string `json:"password"`
-		Nidn         string `json:"nidn"`
-		UniversityID string `json:"university_id"`
-		CompanyID    string `json:"company_id"`
-		Division     string `json:"division"`
+		Name            string `json:"name"`
+		Email           string `json:"email"`
+		Phone           string `json:"phone"`
+		RoleId          uint   `json:"role_id"`
+		Password        string `json:"password"`
+		// supervisor
+		Nidn            string `json:"nidn"`
+		UniversityID    string `json:"university_id"`
+		// kaprodi
+		StudyProgramID  string `json:"study_program_id"`
+		// company
+		CompanyID       string `json:"company_id"`
+		Division        string `json:"division"`
 	}
 
 	var req Request
@@ -73,6 +89,12 @@ func (h *UserCreateHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
+	if req.RoleId == 5 && (req.UniversityID == "" || req.Nidn == "" || req.StudyProgramID == "") {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": "University ID, NIDN, dan Study Program ID wajib untuk role kaprodi",
+		})
+	}
+
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -96,6 +118,7 @@ func (h *UserCreateHandler) CreateUser(c *fiber.Ctx) error {
 	// Prepare role-specific models
 	var supervisor *models.SupervisorUser
 	var companyUser *models.CompanyUser
+	var headStudy *models.HeadstudyUser
 
 	switch req.RoleId {
 	case 4: // Supervisor
@@ -112,10 +135,18 @@ func (h *UserCreateHandler) CreateUser(c *fiber.Ctx) error {
 			Division:  req.Division,
 		}
 		log.Printf("Creating company user record for user: %s", userID)
+	case 5: // Kaprodi/Headstudy
+		headStudy = &models.HeadstudyUser{
+			UserID:         userID,
+			UniversityID:   req.UniversityID,
+			Nidn:           req.Nidn,
+			StudyProgramID: req.StudyProgramID,
+		}
+		log.Printf("Creating supervisor record for user: %s", userID)
 	}
 
 	// Create user and related records
-	if err := h.UserCreateService.CreateUserFull(newUser, supervisor, companyUser); err != nil {
+	if err := h.UserCreateService.CreateUserFull(newUser, supervisor, headStudy, companyUser); err != nil {
 		log.Printf("Failed to create user: %v", err)
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Failed to create user",

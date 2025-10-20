@@ -5,11 +5,11 @@ type CreateWeeklyReportDTO struct {
 	ResearchCaseID string `validate:"required,uuid4"`
 	Week      int      `form:"week" validate:"required"`
 	Progress  string   `form:"progress" validate:"required"`
-	Plans     string   `form:"plans" validate:"required"`
+	Plans     string   `form:"plans"`
 	Mood      int      `form:"mood" validate:"required"`
 	Notes     string   `form:"notes"`
-	StartDate string   `form:"start_date" validate:"required"`
-	EndDate   string   `form:"end_date" validate:"required"`
+	StartDate string   `form:"start_date"`
+	EndDate   string   `form:"end_date"`
 	Files     []string `form:"-"` // tidak di-parse langsung, ditangani manual
 }
 
@@ -21,8 +21,8 @@ type CreateCompanyWeeklyReportDTO struct {
 	Issues         string   `form:"issues"`
 	Hopes          string   `form:"hopes"`
 	Notes          string   `form:"notes"`
-	StartDate      string   `form:"start_date" validate:"required"`
-	EndDate        string   `form:"end_date" validate:"required"`
+	StartDate      string   `form:"start_date"`
+	EndDate        string   `form:"end_date"`
 	Files          []string `form:"files"`
 }
 

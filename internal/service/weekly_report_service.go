@@ -18,6 +18,7 @@ type WeeklyReportService interface {
 	GetReportsBySupervisor(universityID string) ([]models.WeeklyReport, error)
 	SubmitCompanyReport(studentID string, dto dto.CreateCompanyWeeklyReportDTO) error
 	GetReportsByCompany(companyID string) ([]dto.CompanyWeeklyReportResponse, error)
+	GetCompanyReports(companyID string) ([]dto.CompanyWeeklyReportResponse, error)
 }
 
 type weeklyReportService struct {
@@ -101,34 +102,92 @@ func (s *weeklyReportService) SubmitCompanyReport(studentID string, input dto.Cr
 }
 
 
+// func (s *weeklyReportService) GetReports(studentID string) ([]dto.WeeklyReportResponse, error) {
+// 	reports, err := s.repo.GetByStudent(studentID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var response []dto.WeeklyReportResponse
+// 	for _, r := range reports {
+// 		var files []string
+// 		if err := json.Unmarshal([]byte(r.Files), &files); err != nil {
+// 			files = []string{}
+// 		}
+// 		response = append(response, dto.WeeklyReportResponse{
+// 			ID:        r.ID,
+// 			Week:      r.Week,
+// 			Progress:  r.Progress,
+// 			Plans:     r.Plans,
+// 			Mood:      r.Mood,
+// 			Notes:     r.Notes,
+// 			Status:    r.Status,
+// 			StartDate: r.StartDate.Format("02-01-2006"),
+// 			EndDate:   r.EndDate.Format("02-01-2006"),
+// 			Files:     files,
+// 		})
+// 	}
+
+// 	return response, nil
+// }
+
 func (s *weeklyReportService) GetReports(studentID string) ([]dto.WeeklyReportResponse, error) {
-	reports, err := s.repo.GetByStudent(studentID)
-	if err != nil {
-		return nil, err
-	}
+    reports, err := s.repo.GetByStudent(studentID)
+    if err != nil {
+        return nil, err
+    }
 
-	var response []dto.WeeklyReportResponse
-	for _, r := range reports {
-		var files []string
-		if err := json.Unmarshal([]byte(r.Files), &files); err != nil {
-			files = []string{}
-		}
-		response = append(response, dto.WeeklyReportResponse{
-			ID:        r.ID,
-			Week:      r.Week,
-			Progress:  r.Progress,
-			Plans:     r.Plans,
-			Mood:      r.Mood,
-			Notes:     r.Notes,
-			Status:    r.Status,
-			StartDate: r.StartDate.Format("02-01-2006"),
-			EndDate:   r.EndDate.Format("02-01-2006"),
-			Files:     files,
-		})
-	}
-
-	return response, nil
+    var response []dto.WeeklyReportResponse
+    for _, r := range reports {
+        var files []string
+        if err := json.Unmarshal([]byte(r.Files), &files); err != nil {
+            files = []string{}
+        }
+        response = append(response, dto.WeeklyReportResponse{
+            ID:        r.ID,
+            Week:      r.Week,
+            Progress:  r.Progress,
+            Plans:     r.Plans,
+            Mood:      r.Mood,
+            Notes:     r.Notes,
+            Status:    r.Status,
+            StartDate: r.StartDate.Format("02-01-2006"),
+            EndDate:   r.EndDate.Format("02-01-2006"),
+            Files:     files,
+        })
+    }
+    return response, nil
 }
+
+func (s *weeklyReportService) GetCompanyReports(studentID string) ([]dto.CompanyWeeklyReportResponse, error) {
+    reports, err := s.repo.GetCompanyReportsByStudent(studentID)
+    if err != nil {
+        return nil, err
+    }
+
+    var response []dto.CompanyWeeklyReportResponse
+    for _, r := range reports {
+        var files []string
+        if err := json.Unmarshal([]byte(r.Files), &files); err != nil {
+            files = []string{}
+        }
+        response = append(response, dto.CompanyWeeklyReportResponse{
+            ID:           r.ID,
+            Week:        r.Week,
+            Activities:  r.Activities,
+            Issues:      r.Issues,
+            Hopes:       r.Hopes,
+            Notes:       r.Notes,
+            StartDate:   r.StartDate.Format("02-01-2006"),
+            EndDate:     r.EndDate.Format("02-01-2006"),
+            Files:       files,
+            // Student:     dto.UserResponse{ID: r.Student.Id, Name: r.Student.Name},
+            // ResearchCase: dto.ResearchCaseResponse{ID: r.ResearchCase.ID, Title: r.ResearchCase.Title},
+        })
+    }
+    return response, nil
+}
+
 
 func (s *weeklyReportService) GetReportsBySupervisor(universityID string) ([]models.WeeklyReport, error) {
 	return s.repo.GetByUniversity(universityID)

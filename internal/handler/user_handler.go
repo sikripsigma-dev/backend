@@ -87,6 +87,23 @@ func (h *UserHandler) UpdateProfilePhoto(c *fiber.Ctx) error {
 	})
 }
 
+func (h *UserHandler) GetUserDetail(c *fiber.Ctx) error {
+	id := c.Params("id")
+	user, err := h.userService.GetUserWithRelations(id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "user not found",
+		})
+	}
+
+	// Hindari kirim hash password
+	user.Password = ""
+
+	return c.JSON(fiber.Map{
+		"user": user,
+	})
+}
+
 
 // get all users
 func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
@@ -163,4 +180,29 @@ func (h *UserHandler) GetStudentDetail(c *fiber.Ctx) error {
 		"portfolio":     user.Student.Description,
 		"documents":     docs,
 	})
+}
+
+type AssignSupervisorRequest struct {
+    StudentID    string `json:"student_id" binding:"required"`
+    SupervisorID string `json:"supervisor_id" binding:"required"`
+}
+
+func (h *UserHandler) AssignSupervisorToStudent(c *fiber.Ctx) error {
+    var req AssignSupervisorRequest
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "invalid request body",
+        })
+    }
+
+    err := h.userService.AssignSupervisorToStudent(req.StudentID, req.SupervisorID)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error": "failed to assign supervisor",
+        })
+    }
+
+    return c.JSON(fiber.Map{
+        "message": "Supervisor assigned successfully",
+    })
 }

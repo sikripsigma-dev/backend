@@ -15,13 +15,6 @@ type ProcessApplicationRequest struct {
 	Status string `json:"status" validate:"required"`
 }
 
-// type ApplicationResponse struct {
-// 	ID             uint   `json:"id"`
-// 	ResearchCaseID string `json:"research_case_id"`
-// 	UserID         string `json:"user_id"`
-// 	Status         string `json:"status"`
-// 	AppliedAt      int64  `json:"applied_at"`
-// }
 
 type ApplicationResponse struct {
 	ID             uint                    `json:"id"`
@@ -31,6 +24,7 @@ type ApplicationResponse struct {
 	ProcessedAt    time.Time                   `json:"processed_at"`
 	ProcessedBy    string                  `json:"processed_by"`
 	User           ApplicationUserResponse `json:"user"`
+	ResearchCase  ResearchCaseResponse   `json:"research_case"`
 }
 
 type ApplyResponse struct {

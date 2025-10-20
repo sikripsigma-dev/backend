@@ -106,7 +106,8 @@ func (h *AuthHandler) GetUserData(c *fiber.Ctx) error {
 			"univ_id": user.Headstudy.UniversityID,
 			"univ_name": user.Headstudy.University.Name,
 			"study_program_id": user.Headstudy.StudyProgramID,
-			"study_program_name": user.Headstudy.StudyProgram.ID,
+			"study_program_name": user.Headstudy.StudyProgram.Name,
+			"nidn": user.Headstudy.Nidn,
 		}
 	}
 

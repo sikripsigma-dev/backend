@@ -8,9 +8,11 @@ import (
 
 type MenuRepository interface {
 	Create(menu *models.Menu) error
-	GetByID(id string) (*models.Menu, error)
+	// GetByID(id string) (*models.Menu, error)
+	GetByID(id uint) (*models.Menu, error)
 	Update(menu *models.Menu) error
 	GetAll() ([]models.Menu, error)
+	Delete(id uint) error
 }
 
 type menuRepository struct {
@@ -37,10 +39,26 @@ func (r *menuRepository) GetAll() ([]models.Menu, error) {
 	return menus, nil
 }
 
-func (r *menuRepository) GetByID(id string) (*models.Menu, error) {
+// func (r *menuRepository) GetByID(id string) (*models.Menu, error) {
+// 	var menu models.Menu
+// 	if err := r.db.Where("id = ?", id).First(&menu).Error; err != nil {
+// 		return nil, err
+// 	}
+// 	return &menu, nil
+// }
+
+func (r *menuRepository) GetByID(id uint) (*models.Menu, error) {
 	var menu models.Menu
-	if err := r.db.Where("id = ?", id).First(&menu).Error; err != nil {
+	if err := r.db.Where("id_menu = ?", id).First(&menu).Error; err != nil {
 		return nil, err
 	}
 	return &menu, nil
+}
+
+func (r *menuRepository) Delete(id uint) error {
+    tx := r.db.Delete(&models.Menu{}, "id_menu = ?", id)
+    if tx.Error != nil {
+        return tx.Error
+    }
+    return nil
 }

@@ -33,12 +33,16 @@ func Setup(app *fiber.App) {
 	studentDocumentRepo := repository.NewStudentDocumentRepository(config.DB)
 	monitoringProgressRepo := repository.NewMonitoringProgressRepository(config.DB)
 	authTokenRepo := repository.NewAuthTokenRepository(config.DB)
+	headStudyRepo := repository.NewHeadstudyRepository(config.DB)
+	programStudyRepo := repository.NewStudyProgramRepository(config.DB)
+	menuAccessRepo  := repository.NewMenuAccessRepository(config.DB)
+	researchCaseValidationRepository := repository.NewResearchCaseValidationRepository(config.DB)
 
 	chatService := service.NewChatService(chatRepo)
 	// Services
 	authService := service.NewAuthService(userRepo, authTokenRepo, chatService)
 	UserService := service.NewUserService(userRepo, config.DB)
-	researchCaseService := service.NewResearchCaseService(researchCaseRepo)
+	researchCaseService := service.NewResearchCaseService(researchCaseRepo, repository.NewResearchCaseValidationRepository(config.DB))
 	companyService := service.NewCompanyService(companyRepo)
 	tagService := service.NewTagService(tagRepo)
 	roleService := service.NewRoleService(roleRepo)
@@ -51,9 +55,13 @@ func Setup(app *fiber.App) {
 	userCreateService := service.NewUserCreateService(userCreateRepo)
 	userCreateLogService := service.NewUserCreateLogService(userCreateLogRepo)
 	assignmentService := service.NewAssignmentService(assignmentRepo)
-	supervisorService := service.NewSupervisorService(supervisorRepo)
+	supervisorService := service.NewSupervisorService(supervisorRepo, config.DB)
 	studentDocumentService := service.NewStudentDocumentService(studentDocumentRepo, userRepo)
 	monitoringProgressService := service.NewMonitoringProgressService(monitoringProgressRepo, weeklyReportRepo,companyWeeklyRepo, notificationService, userRepo)
+	headStudyService := service.NewHeadstudyService(headStudyRepo)
+	programStudyService := service.NewStudyProgramService(programStudyRepo)
+	menuAccessService  := service.NewMenuAccessService(config.DB, menuRepo, menuAccessRepo)
+	researchCaseValidationService := service.NewResearchCaseValidationService(researchCaseValidationRepository)
 
 	// handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -73,6 +81,10 @@ func Setup(app *fiber.App) {
 	supervisorHandler := handler.NewSupervisorHandler(supervisorService)
 	studentDocumentHandler := handler.NewStudentDocumentHandler(studentDocumentService)
 	monitoringProgressHandler := handler.NewMonitoringProgressHandler(monitoringProgressService)
+	headStudyHandler := handler.NewHeadstudyHandler(headStudyService)
+	studyProgramHandler := handler.NewStudyProgramHandler(programStudyService)
+	menuAccessHandler   := handler.NewMenuAccessHandler(menuAccessService)
+	researchCaseValidationHandler := handler.NewResearchCaseValidationHandler(researchCaseValidationService)
 
 	// Middleware
 	authMiddleware := middleware.AuthMiddleware(authService)
@@ -91,10 +103,16 @@ func Setup(app *fiber.App) {
 	app.Get("/api/users", authMiddleware, userHandler.GetAllUsers)
 	app.Put("/api/user/:id", authMiddleware, userHandler.UpdateUser)
 	app.Get("/api/detail/student/:id", authMiddleware, userHandler.GetStudentDetail)
+	app.Put("/api/student/assign-supervisor", authMiddleware, userHandler.AssignSupervisorToStudent)
+	app.Get("/api/user/:id", authMiddleware, userHandler.GetUserDetail)
+
+
 
 	// Research Case routes
 	app.Post("/api/research-case", researchCaseHandler.CreateResearchCase)
 	app.Get("/api/research-case", researchCaseHandler.GetAllResearchCases)
+	app.Get("/api/research-case/approved", authMiddleware, researchCaseHandler.GetAllResearchCasesByStudent)
+	app.Get("/api/research-case/headstudy", authMiddleware, researchCaseHandler.GetAllResearchCasesForHeadstudy)
 	app.Get("/api/research-case/:id", researchCaseHandler.GetResearchCaseByID)
 	app.Get("/api/research-case/company/:company_id", researchCaseHandler.GetResearchCasesByCompanyID)
 	app.Put("/api/research-case/:id", researchCaseHandler.UpdateResearchCase)
@@ -122,6 +140,9 @@ func Setup(app *fiber.App) {
 	app.Put("/api/application/respond-to/:id", authMiddleware, applicationHandler.RespondToApplication)
 	app.Get("/api/application/research-case/:id", authMiddleware, applicationHandler.GetApplicationsByResearchCaseID)
 	app.Get("/api/application/student/:id", authMiddleware, applicationHandler.GetApplicationsByStudentID)
+	app.Get("/api/application/pending/headstudy", authMiddleware, applicationHandler.GetPendingApplicationsForHeadStudy)
+	app.Put("/api/application/headstudy/confirm/:id", authMiddleware, applicationHandler.ConfirmByHeadStudy)
+
 	// cek application exist
 	app.Get("/api/application/check", authMiddleware, applicationHandler.CheckApplication)
 	// app.Post("/api/application", middleware.StudentOnly(), applicationHandler.CreateApplication)
@@ -129,8 +150,13 @@ func Setup(app *fiber.App) {
 	// app.Get("/api/application/:id", applicationHandler.GetApplicationByID)
 
 	// menu routes
-	app.Post("/api/menu", authMiddleware, menuHandler.CreateMenu)
-	app.Get("/api/menu", authMiddleware, menuHandler.GetAllMenu)
+	// app.Post("/api/menu", authMiddleware, menuHandler.CreateMenu)
+	// app.Get("/api/menu", authMiddleware, menuHandler.GetAllMenu)
+
+	app.Post("/api/menu",        authMiddleware, menuHandler.CreateMenu)
+	app.Get("/api/menu",         authMiddleware, menuHandler.GetAllMenu)
+	app.Put("/api/menu/:id",     authMiddleware, menuHandler.UpdateMenu)
+	app.Delete("/api/menu/:id",  authMiddleware, menuHandler.DeleteMenu)
 
 	// app.Get("/api/chatrooms/student/:id", authMiddleware, chatHandler.GetChatRoomsByStudentID)
 	// app.Get("/api/chatrooms/company/:id", authMiddleware, chatHandler.GetChatRoomByCompanyID)
@@ -153,15 +179,39 @@ func Setup(app *fiber.App) {
 
 	// university
 	app.Get("/api/university", authMiddleware, universityHandler.GetAll)
+	app.Get("/api/university/:id", authMiddleware, universityHandler.GetByID)
+	app.Post("/api/university", authMiddleware, universityHandler.Create)
+	app.Put("/api/university/:id", authMiddleware, universityHandler.Update)
+	app.Delete("/api/university/:id", authMiddleware, universityHandler.Delete)
+
+	// study program
+	app.Get("/api/study-program",    authMiddleware, studyProgramHandler.GetAll)
+	app.Get("/api/study-program/:id",authMiddleware, studyProgramHandler.GetByID)
+	app.Post("/api/study-program",   authMiddleware, studyProgramHandler.Create)
+	app.Put("/api/study-program/:id",authMiddleware, studyProgramHandler.Update)
+	app.Delete("/api/study-program/:id", authMiddleware, studyProgramHandler.Delete)
 
 	// create user
 	app.Post("/api/user-create", authMiddleware, userCreateHandler.CreateUser)
 	app.Get("/api/user-create", authMiddleware, userCreateHandler.GetCreationLogs)
 
 	// assignment
-	app.Get("/api/assignment/active", authMiddleware, assignmentHandler.GetMyActiveAssignment)
-	app.Get("/api/assignment/company", authMiddleware, assignmentHandler.GetActiveAssignmentsByCompany)
-	app.Put("/api/assignment/:id/status", authMiddleware, assignmentHandler.UpdateAssignmentStatus)
+	// app.Get("/api/assignment/active", authMiddleware, assignmentHandler.GetMyActiveAssignment)
+	// app.Get("/api/assignment/company", authMiddleware, assignmentHandler.GetActiveAssignmentsByCompany)
+	// app.Put("/api/assignment/:id/status", authMiddleware, assignmentHandler.UpdateAssignmentStatus)
+	// app.Get("/api/assignment/certificate", authMiddleware, assignmentHandler.GenerateCertificate)
+	// app.Get("/api/assignments/mine",               authMiddleware, assignmentHandler.ListMyAssignments)
+
+	app.Get("/api/assignment/active",         authMiddleware, assignmentHandler.GetMyActiveAssignment)
+	app.Get("/api/assignment/company",        authMiddleware, assignmentHandler.GetActiveAssignmentsByCompany)
+	app.Put("/api/assignment/:id/status",     authMiddleware, assignmentHandler.UpdateAssignmentStatus)
+
+	// list assignment milik user
+	app.Get("/api/assignments/mine",          authMiddleware, assignmentHandler.ListMyAssignments)
+
+	// UNDuh sertifikat by assignment id (INI YANG DIPAKAI FE)
+	app.Get("/api/assignments/:id/certificate", authMiddleware, assignmentHandler.GenerateCertificate)
+
 
 	// supervisor
 	app.Get("/api/supervisor/students", authMiddleware, supervisorHandler.GetStudentsBySupervisor)
@@ -175,6 +225,24 @@ func Setup(app *fiber.App) {
 	// momitoring progress
 	app.Post("/api/feedback/supervisor", authMiddleware, monitoringProgressHandler.GiveFeedback)
 	app.Post("/api/feedback/company", authMiddleware, monitoringProgressHandler.GiveFeedbackCompany)
+	app.Get("/api/feedback/supervisor/:weeklyReportID", authMiddleware, monitoringProgressHandler.GetSupervisorFeedback)
+	app.Get("/api/feedback/company/:weeklyReportID", authMiddleware, monitoringProgressHandler.GetCompanyFeedback)
+
+
+	app.Get("/api/students/university", authMiddleware, headStudyHandler.GetStudentsByUniversity)
+
+	// hak akses menu
+	app.Get( "/api/roles/:roleId/menu-access",  authMiddleware, menuAccessHandler.GetTreeByRole)
+	app.Put( "/api/roles/:roleId/menu-access",  authMiddleware, menuAccessHandler.UpdateBulk)
+
+
+	// app.Get("/api/research-case/headstudy",               authMiddleware, researchCaseValidationHandler.ListForHeadstudy) // kalau sudah ada, biarkan
+	// app.Post("/api/research-case/validation",             authMiddleware, researchCaseValidationHandler.UpsertValidation) // upsert status
+	// app.Get ("/api/research-case/:research_case_id/comments", authMiddleware, researchCaseValidationHandler.GetCommentsByResearchCaseID)
+	// app.Post("/api/research-case/:research_case_id/comments", authMiddleware, researchCaseValidationHandler.CreateComment)
+	app.Post("/api/research-case/validation", authMiddleware, researchCaseValidationHandler.UpsertValidation)
+	app.Get ("/api/research-case/:research_case_id/comments", authMiddleware, researchCaseValidationHandler.GetCommentsByResearchCaseID)
+	app.Post("/api/research-case/:research_case_id/comments", authMiddleware, researchCaseValidationHandler.CreateComment)
 
 
 }

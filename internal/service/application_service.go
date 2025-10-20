@@ -199,3 +199,20 @@ func (s *ApplicationService) GetApplicationsByStudentID(studentID string) ([]mod
 	}
 	return applications, nil
 }
+
+func (s *ApplicationService) GetPendingHeadStudyConfirmations(universityID, studyProgramID string) ([]models.Application, error) {
+	return s.applicationRepo.GetPendingHeadstudyConfirmations(universityID, studyProgramID)
+}
+
+
+func (s *ApplicationService) ConfirmByHeadStudy(applicationID uint, decision string) error {
+	// Validasi input
+	if decision != "accepted" && decision != "rejected" {
+		return errors.New("invalid decision value")
+	}
+
+	// Panggil repository
+	return s.applicationRepo.UpdateHeadStudyDecision(applicationID, decision)
+}
+
+

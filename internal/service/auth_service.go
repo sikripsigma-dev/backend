@@ -35,18 +35,29 @@ func NewAuthService(userRepo repository.UserRepository, authTokenRepo repository
 
 func (s *AuthService) Register(req dto.RegisterRequest) (*models.User, error) {
 	// 1. Cek apakah email sudah terdaftar
-	existingUser, err := s.userRepo.GetByEmail(req.Email)
-	if err == nil && existingUser != nil {
+	// existingUser, err := s.userRepo.GetByEmail(req.Email)
+	// if err == nil && existingUser != nil {
+	// 	return nil, fmt.Errorf("Email already registered")
+	// }
+	if existingUser, err := s.userRepo.GetByEmail(req.Email); err == nil && existingUser != nil {
 		return nil, fmt.Errorf("Email already registered")
 	}
 
 	// 2. Cari dosen pembimbing berdasarkan email
-	supervisor, err := s.userRepo.GetByEmail(req.SupervisorEmail)
+	// supervisor, err := s.userRepo.GetByEmail(req.SupervisorEmail)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Dosen pembimbing dengan email tersebut tidak ditemukan")
+	// }
+	hsUser, err := s.userRepo.FindHeadstudyByUnivAndProdi(req.UniversityID, req.StudyProgramID)
 	if err != nil {
-		return nil, fmt.Errorf("Dosen pembimbing dengan email tersebut tidak ditemukan")
+		return nil, fmt.Errorf("Kaprodi tidak ditemukan untuk universitas/prodi tersebut")
 	}
 
 	// 3. Hash password
+	// hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Failed to hash password")
+	// }
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to hash password")
@@ -54,26 +65,32 @@ func (s *AuthService) Register(req dto.RegisterRequest) (*models.User, error) {
 
 	// 4. Simpan user
 	user := models.User{
-		Name:     req.Name,
-		Phone:    req.Phone,
-		Email:    req.Email,
-		// default role mahasiswa 3
-		RoleId: 3,
-		Password: string(hashedPassword),
+		Name:      req.Name,
+		Phone:     req.Phone,
+		Email:     req.Email,
+		RoleId:    3,
+		Password:  string(hashedPassword),
+		IsVerified: false,
 	}
 
 	if err := s.userRepo.Create(&user); err != nil {
 		return nil, fmt.Errorf("Failed to register user")
 	}
 
+	jurusanName := ""
+	if sp, err := s.userRepo.GetStudyProgramByID(req.StudyProgramID); err == nil && sp != nil {
+		jurusanName = sp.Name
+	}
+
 	// 5. Simpan ke tabel user_student dengan supervisor_id
 	student := &models.StudentUser{
-		UserID:       user.Id,
-		SupervisorID: supervisor.Id,
-		UniversityID: req.UniversityID,
-		Jurusan:      req.Jurusan,
-		Gpa:          req.Gpa,
-		Nim:          req.Nim,
+		UserID:         user.Id,
+		UniversityID:   req.UniversityID,
+		StudyProgramID: req.StudyProgramID,
+		Jurusan:        jurusanName,
+		Gpa:            req.Gpa,
+		Nim:            req.Nim,
+		HeadStudyID:    hsUser.Id,
 	}
 
 	if err := s.userRepo.CreateStudent(student); err != nil {
@@ -153,32 +170,6 @@ func (s *AuthService) GetUserByToken(tokenString string) (*models.User, error) {
 
 	return user, nil
 }
-
-// func (s *AuthService) VerifyEmailToken(token string) (*models.AuthToken, error) {
-// 	authToken, err := s.authTokenRepo.GetByToken(token)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("Token tidak valid")
-// 	}
-
-// 	if time.Now().After(authToken.ExpiresAt) {
-// 		return nil, fmt.Errorf("Token sudah kedaluwarsa")
-// 	}
-
-// 	// Update user menjadi terverifikasi
-// 	user, err := s.userRepo.GetByID(authToken.UserID)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("User tidak ditemukan")
-// 	}
-
-// 	user.IsVerified = true
-// 	if err := s.userRepo.Update(user); err != nil {
-// 		return nil, fmt.Errorf("Gagal memverifikasi email")
-// 	}
-
-// 	_ = s.authTokenRepo.DeleteByID(authToken.ID)
-
-// 	return authToken, nil
-// }
 
 func (s *AuthService) VerifyEmailToken(token string) (*models.AuthToken, error) {
 	authToken, err := s.authTokenRepo.GetByToken(token)

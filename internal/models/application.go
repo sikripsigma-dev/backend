@@ -10,6 +10,9 @@ type Application struct {
 	UserID         string `gorm:"not null"`
 	Status         string `gorm:"default:'pending'"`
 	AppliedAt      time.Time  `gorm:"autoCreateTime" json:"applied_at"`
+	// confirm by headstudy
+	// ConfirmedByHeadStudy bool      `gorm:"default:false"`
+	HeadStudyDecision string `gorm:"default:'accepted'"`
 	ProcessedAt time.Time `gorm:"autoUpdateTime" json:"processed_at"`
 	ProcessedBy    string `gorm:"default:null"`
 

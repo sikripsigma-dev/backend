@@ -1,8 +1,8 @@
 package service
 
 import (
-	// "Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/dto"
+	"Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/repository"
 	"fmt"
 )
@@ -125,4 +125,33 @@ func (s *AssignmentService) UpdateAssignmentStatus(id uint, status string) error
 		return fmt.Errorf("Invalid status: %s", status)
 	}
 	return s.assignmentRepo.UpdateStatus(id, status)
+}
+
+func (s *AssignmentService) GetAssignmentsByUser(userID string) ([]dto.AssignmentResponse, error) {
+    list, err := s.assignmentRepo.GetByUserID(userID)
+    if err != nil { return nil, err }
+
+    out := make([]dto.AssignmentResponse, 0, len(list))
+    for _, a := range list {
+        resp := dto.AssignmentResponse{
+            ID: a.ID, ApplicationID: a.ApplicationID, UserID: a.UserID,
+            ResearchCaseID: a.ResearchCaseID, Status: a.Status,
+            StartedAt: a.StartedAt, EndedAt: a.EndedAt,
+        }
+        if a.ResearchCase.ID != "" {
+            resp.ResearchCase = &dto.AssignmentResearchCaseResponse{
+                ID: a.ResearchCase.ID, CompanyID: a.ResearchCase.CompanyID,
+                Title: a.ResearchCase.Title, Field: a.ResearchCase.Field,
+                Location: a.ResearchCase.Location, EducationRequirement: a.ResearchCase.EducationRequirement,
+                Duration: a.ResearchCase.Duration, Description: a.ResearchCase.Description,
+                CreatedAt: a.ResearchCase.CreatedAt,
+            }
+        }
+        out = append(out, resp)
+    }
+    return out, nil
+}
+
+func (s *AssignmentService) GetOwnedAssignment(userID string, id uint) (*models.Assignment, error) {
+    return s.assignmentRepo.GetByIDForUser(id, userID)
 }

@@ -10,7 +10,7 @@ type Menu struct {
 
 type CreateMenuRequest struct {
 	Name     string `json:"name" validate:"required"`
-	URL      string `json:"url" validate:"required,url"`
+	URL      string `json:"url" validate:"required,max=225"`
 	Icon     string `json:"icon"`
 	IsActive bool   `json:"is_active" validate:"required"`
 	ParentID *uint  `json:"parent_id"`
@@ -18,7 +18,7 @@ type CreateMenuRequest struct {
 
 type UpdateMenuRequest struct {
 	Name     string `json:"name" validate:"required"`
-	URL      string `json:"url" validate:"required,url"`
+	URL      string `json:"url" validate:"required,max=225"`
 	Icon     string `json:"icon"`
 	IsActive bool   `json:"is_active" validate:"required"`
 	ParentID *uint  `json:"parent_id"`

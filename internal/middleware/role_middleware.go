@@ -19,6 +19,30 @@ func StudentOnly() fiber.Handler {
     }
 }
 
+func SupervisorOnly() fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        user := c.Locals("user").(models.User)
+        if user.RoleId != 4 {
+            return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+                "error": "Only supervisor can access this route.",
+            })
+        }
+        return c.Next()
+    }
+}
+
+func HeadStudy() fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        user := c.Locals("user").(models.User)
+        if user.RoleId != 5 {
+            return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+                "error": "Only program heads can access this route.",
+            })
+        }
+        return c.Next()
+    }
+}
+
 func CompanyOnly() fiber.Handler {
     return func(c *fiber.Ctx) error {
         user := c.Locals("user").(models.User)

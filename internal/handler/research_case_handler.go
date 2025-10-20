@@ -2,6 +2,7 @@ package handler
 
 import (
 	"Skripsigma-BE/internal/dto"
+	"Skripsigma-BE/internal/models"
 	"Skripsigma-BE/internal/service"
 
 	"github.com/gofiber/fiber/v2"
@@ -39,6 +40,40 @@ func (h *ResearchCaseHandler) GetAllResearchCases(c *fiber.Ctx) error {
 	}
 	return c.JSON(fiber.Map{"research_cases": researchCases})
 }
+
+func (h *ResearchCaseHandler) GetAllResearchCasesByStudent(c *fiber.Ctx) error {
+	// studentID := c.Locals("user_id").(string) // misal dari middleware JWT
+	user := c.Locals("user").(*models.User)
+	studentID := user.Student.UserID
+
+	researchCases, err := h.researchCaseService.GetApprovedByHeadStudy(studentID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"research_cases": researchCases,
+	})
+}
+
+
+// get all research cases for headstudy (not published yet)
+func (h *ResearchCaseHandler) GetAllResearchCasesForHeadstudy(c *fiber.Ctx) error {
+
+	// headstudyUserID := c.Locals("headstudy_user_id").(string)
+	user := c.Locals("user").(*models.User)
+	headstudyUserID := user.Id
+	// headstudyUserID := "test-sparda-123"
+
+	researchCases, err := h.researchCaseService.GetAllResearchCasesForHeadstudy(headstudyUserID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"research_cases": researchCases})
+}
+
 
 func (h *ResearchCaseHandler) GetResearchCaseByID(c *fiber.Ctx) error {
 	id := c.Params("id")

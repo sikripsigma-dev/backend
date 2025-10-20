@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"Skripsigma-BE/internal/models"
 	"errors"
 	"strings"
 )
@@ -14,6 +15,7 @@ type CreateResearchCaseRequest struct {
 	Duration	string `json:"duration" validate:"required"`
 	EducationRequirement string `json:"education_requirement" validate:"required"`
 	TagIDs     []string `json:"tag_ids"`
+	CategoryIDs          []string `json:"category_ids"`
 }
 
 type UpdateResearchCaseRequest struct {
@@ -23,7 +25,15 @@ type UpdateResearchCaseRequest struct {
 	Location    string `json:"location" validate:"required"`
 	Duration    string `json:"duration" validate:"required"`
 	EducationRequirement string `json:"education_requirement" validate:"required"`
+	CategoryIDs          []string `json:"category_ids"`
 }
+
+type ResearchCaseWithValidationStatus struct {
+	models.ResearchCase
+	Reviewed     bool   `json:"reviewed"`
+	ReviewStatus string `json:"review_status"` // "pending", "approved", "rejected", or "" if not reviewed
+}
+
 
 func (r *CreateResearchCaseRequest) Validate() error {
 	if strings.TrimSpace(r.Title) == "" {

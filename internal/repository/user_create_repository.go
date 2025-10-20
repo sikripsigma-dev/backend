@@ -11,7 +11,8 @@ type UserCreateRepository interface {
 	Create(user *models.User) error
 	CreateSupervisor(sup *models.SupervisorUser) error
 	CreateCompanyUser(comp *models.CompanyUser) error
-	CreateUserWithRelated(user *models.User, sup *models.SupervisorUser, comp *models.CompanyUser) error
+	CreateHeadstudy(head *models.HeadstudyUser) error
+	CreateUserWithRelated(user *models.User, sup *models.SupervisorUser, head *models.HeadstudyUser, comp *models.CompanyUser) error
 }
 
 type userCreateRepository struct {
@@ -30,6 +31,10 @@ func (r *userCreateRepository) CreateSupervisor(sup *models.SupervisorUser) erro
 	return r.db.Create(sup).Error
 }
 
+func (r *userCreateRepository) CreateHeadstudy(head *models.HeadstudyUser) error {
+    return r.db.Create(head).Error
+}
+
 func (r *userCreateRepository) CreateCompanyUser(comp *models.CompanyUser) error {
 	return r.db.Create(comp).Error
 }
@@ -37,6 +42,7 @@ func (r *userCreateRepository) CreateCompanyUser(comp *models.CompanyUser) error
 func (r *userCreateRepository) CreateUserWithRelated(
 	user *models.User,
 	supervisor *models.SupervisorUser,
+	headstudy *models.HeadstudyUser,
 	companyUser *models.CompanyUser,
 ) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
@@ -53,6 +59,11 @@ func (r *userCreateRepository) CreateUserWithRelated(
 				return err
 			}
 		}
+
+		if headstudy != nil {
+            if err := tx.Create(headstudy).Error; err != nil { return err }
+        }
+		
 		if companyUser != nil {
 			log.Println("🧾 Creating company user:", companyUser.UserID)
 			if err := tx.Create(companyUser).Error; err != nil {

@@ -42,10 +42,38 @@ func (r *repository) Create(ctx context.Context, u *models.University) error {
 	return r.db.WithContext(ctx).Create(u).Error
 }
 
+// func (r *repository) Update(ctx context.Context, u *models.University) error {
+// 	return r.db.WithContext(ctx).Save(u).Error
+// }
+
 func (r *repository) Update(ctx context.Context, u *models.University) error {
-	return r.db.WithContext(ctx).Save(u).Error
+	tx := r.db.WithContext(ctx).Model(&models.University{}).
+		Where("id = ?", u.ID).
+		Updates(map[string]any{
+			"name":       u.Name,
+			"updated_at": u.UpdatedAt,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
+// func (r *repository) Delete(ctx context.Context, id string) error {
+// 	return r.db.WithContext(ctx).Delete(&models.University{}, "id = ?", id).Error
+// }
+
 func (r *repository) Delete(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Delete(&models.University{}, "id = ?", id).Error
+	tx := r.db.WithContext(ctx).Delete(&models.University{}, "id = ?", id)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
+

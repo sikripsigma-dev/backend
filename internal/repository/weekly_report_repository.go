@@ -13,6 +13,7 @@ type WeeklyReportRepository interface {
 	CreateCompanyReport(report *models.CompanyWeeklyReport) error
 	GetByCompanyID(companyID string) ([]models.CompanyWeeklyReport, error)
 	GetByID(id uint) (*models.WeeklyReport, error)
+	GetCompanyReportsByStudent(companyID string) ([]models.CompanyWeeklyReport, error)
 }
 
 type weeklyReportRepo struct {
@@ -32,15 +33,38 @@ func (r *weeklyReportRepo) CreateCompanyReport(report *models.CompanyWeeklyRepor
 }
 
 
+// func (r *weeklyReportRepo) GetByStudent(studentID string) ([]models.WeeklyReport, error) {
+// 	var reports []models.WeeklyReport
+// 	err := r.db.
+// 		Where("student_id = ?", studentID).
+// 		Order("week desc").
+// 		Preload("Student").
+// 		Find(&reports).Error
+// 	return reports, err
+// }
+
+
 func (r *weeklyReportRepo) GetByStudent(studentID string) ([]models.WeeklyReport, error) {
-	var reports []models.WeeklyReport
-	err := r.db.
-		Where("student_id = ?", studentID).
-		Order("week desc").
-		Preload("Student").
-		Find(&reports).Error
-	return reports, err
+    var reports []models.WeeklyReport
+    err := r.db.
+        Where("student_id = ?", studentID).
+        Order("week desc").
+        Preload("Student").
+        Find(&reports).Error
+    return reports, err
 }
+
+func (r *weeklyReportRepo) GetCompanyReportsByStudent(studentID string) ([]models.CompanyWeeklyReport, error) {
+    var reports []models.CompanyWeeklyReport
+    err := r.db.
+        Where("student_id = ?", studentID).
+        Order("week desc").
+        Preload("Student").
+        Preload("ResearchCase").
+        Find(&reports).Error
+    return reports, err
+}
+
 
 func (r *weeklyReportRepo) GetByUniversity(universityID string) ([]models.WeeklyReport, error) {
 	var reports []models.WeeklyReport

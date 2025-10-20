@@ -7,6 +7,7 @@ import (
 	"Skripsigma-BE/internal/util"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -116,11 +117,6 @@ func (h *ApplicationHandler) CheckApplication(c *fiber.Ctx) error {
 			"error": "Gagal mengecek aplikasi",
 		})
 	}
-	// if assigned {
-	// 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-	// 		"error": "Mahasiswa sudah aktif dalam studi kasus lain dan tidak bisa apply lagi",
-	// 	})
-	// }
 
 	return c.JSON(fiber.Map{
 		"applied":  exists,
@@ -195,25 +191,6 @@ func (h *ApplicationHandler) ProcessApplication(c *fiber.Ctx) error {
 	})
 }
 
-// func (h *ApplicationHandler) RespondToApplication(c *fiber.Ctx) error {
-// 	var req dto.ProcessApplicationRequest
-// 	if err := c.BodyParser(&req); err != nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
-// 	}
-
-// 	applicationID := c.Params("id")
-// 	user := c.Locals("user").(*models.User)
-
-// 	err := h.applicationService.RespondToApplication(applicationID, req.Status, user.Id)
-// 	if err != nil {
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-// 	}
-
-// 	return c.JSON(fiber.Map{
-// 		"message": "Application responded successfully",
-// 	})
-// }
-
 func (h *ApplicationHandler) RespondToApplication(c *fiber.Ctx) error {
 	// 1. Ambil dan parse body
 	var req dto.ProcessApplicationRequest
@@ -274,9 +251,13 @@ func (h *ApplicationHandler) GetApplicationsByResearchCaseID(c *fiber.Ctx) error
         })
     }
 
-
     var responses []dto.ApplicationResponse
     for _, app := range applications {
+        // Filter: hanya masukkan jika HeadStudyDecision bernilai "accepted"
+        if app.HeadStudyDecision != "accepted" {
+            continue
+        }
+
         resp := dto.ApplicationResponse{
             ID:             app.ID,
             ResearchCaseID: app.ResearchCaseID,
@@ -299,6 +280,100 @@ func (h *ApplicationHandler) GetApplicationsByResearchCaseID(c *fiber.Ctx) error
         "applications": responses,
     })
 }
+
+// get students applications for Headstudy
+func (h *ApplicationHandler) GetPendingApplicationsForHeadStudy(c *fiber.Ctx) error {
+
+	headStudyUser := c.Locals("user").(*models.User)
+
+	if headStudyUser == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized access",
+		})
+	}
+
+	applications, err := h.applicationService.GetPendingHeadStudyConfirmations(
+		headStudyUser.Headstudy.UniversityID,
+		headStudyUser.Headstudy.StudyProgramID,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Sprintf("Gagal mengambil aplikasi: %v", err),
+		})
+	}
+
+	var responses []dto.ApplicationResponse
+	for _, app := range applications {
+		
+
+		resp := dto.ApplicationResponse{
+			ID:             app.ID,
+			ResearchCaseID: app.ResearchCaseID,
+			Status:         app.Status,
+			AppliedAt:      app.AppliedAt,
+			ProcessedAt:    app.ProcessedAt,
+			ProcessedBy:    app.ProcessedBy,
+			User: dto.ApplicationUserResponse{
+				Id:    app.User.Id,
+				Nim:   app.User.Nim,
+				Name:  app.User.Name,
+				Phone: app.User.Phone,
+				Email: app.User.Email,
+			},
+			ResearchCase: dto.ResearchCaseResponse{
+				ID:          app.ResearchCase.ID,
+				Title:       app.ResearchCase.Title,
+				Description: app.ResearchCase.Description,
+				Company: dto.CompanyResponse{
+					ID:    app.ResearchCase.Company.Id,
+					Name:  app.ResearchCase.Company.Name,
+					Email: app.ResearchCase.Company.Email,
+				},
+			},
+		}
+
+
+		responses = append(responses, resp)
+	}
+
+	return c.JSON(fiber.Map{
+		"applications": responses,
+	})
+}
+
+
+type ConfirmRequest struct {
+	Decision string `json:"decision"` // expected: accepted / rejected
+}
+
+func (h *ApplicationHandler) ConfirmByHeadStudy(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	applicationID, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid application id",
+		})
+	}
+
+	var req ConfirmRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid request body",
+		})
+	}
+
+	err = h.applicationService.ConfirmByHeadStudy(uint(applicationID), req.Decision)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "decision updated successfully",
+	})
+}
+
 
 func (h *ApplicationHandler) GetApplicationsByStudentID(c *fiber.Ctx) error {
 	studentID := c.Params("id")

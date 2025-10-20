@@ -18,6 +18,9 @@ type UserRepository interface {
 	GetWithRelationsByID(id string) (*models.User, error)
 	GetAll() ([]*models.User, error)
 	GetStudentDetailByID(id string) (*models.User, error)
+	AssignSupervisorToStudent(studentID string, supervisorID string) error
+	FindHeadstudyByUnivAndProdi(univID, prodiID string) (*models.User, error)
+	GetStudyProgramByID(id string) (*models.StudyProgram, error)
 }
 
 type userRepository struct {
@@ -100,6 +103,32 @@ func (r *userRepository) GetStudentDetailByID(id string) (*models.User, error) {
 
 func (r *userRepository) CreateStudent(student *models.StudentUser) error {
 	return r.db.Create(student).Error
+}
+
+func (r *userRepository) AssignSupervisorToStudent(studentID string, supervisorID string) error {
+    return r.db.Model(&models.StudentUser{}).
+        Where("user_id = ?", studentID).
+        Update("supervisor_id", supervisorID).Error
+}
+
+func (r *userRepository) FindHeadstudyByUnivAndProdi(univID, prodiID string) (*models.User, error) {
+	var u models.User
+	err := r.db.
+		Joins("JOIN ss_headstudy_user hs ON hs.user_id = ss_users.id").
+		Where("hs.university_id = ? AND hs.study_program_id = ?", univID, prodiID).
+		First(&u).Error
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (r *userRepository) GetStudyProgramByID(id string) (*models.StudyProgram, error) {
+    var sp models.StudyProgram
+    if err := r.db.Where("id = ?", id).First(&sp).Error; err != nil {
+        return nil, err
+    }
+    return &sp, nil
 }
 
 

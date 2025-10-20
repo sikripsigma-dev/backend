@@ -3,6 +3,7 @@ package handler
 import (
 	"Skripsigma-BE/internal/dto"
 	"Skripsigma-BE/internal/service"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -74,5 +75,51 @@ func (h *MonitoringProgressHandler) GiveFeedbackCompany(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "Feedback berhasil disimpan",
+	})
+}
+
+
+func (h *MonitoringProgressHandler) GetSupervisorFeedback(c *fiber.Ctx) error {
+	reportIDParam := c.Params("weeklyReportID")
+	reportID, err := strconv.Atoi(reportIDParam)
+	if err != nil || reportID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "weeklyReportID tidak valid",
+		})
+	}
+
+	feedbacks, err := h.service.GetSupervisorFeedback(uint(reportID))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Gagal mengambil feedback",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"feedbacks": feedbacks,
+	})
+}
+
+
+func (h *MonitoringProgressHandler) GetCompanyFeedback(c *fiber.Ctx) error {
+	reportIDParam := c.Params("weeklyReportID")
+	reportID, err := strconv.Atoi(reportIDParam)
+	if err != nil || reportID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "weeklyReportID tidak valid",
+		})
+	}
+
+	feedbacks, err := h.service.GetCompanyFeedback(uint(reportID))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Gagal mengambil feedback",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"feedbacks": feedbacks,
 	})
 }

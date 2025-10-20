@@ -217,21 +217,65 @@ func (h *Handler) SubmitCompanyWeeklyReport(c *fiber.Ctx) error {
 	})
 }
 
+// func (h *Handler) GetWeeklyReports(c *fiber.Ctx) error {
+// 	user := c.Locals("user").(*models.User)
+
+// 	reports, err := h.weeklyReportService.GetReports(user.Id)
+// 	if err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"message": "Gagal mengambil laporan",
+// 			"error":   err.Error(),
+// 		})
+// 	}
+
+// 	return c.JSON(fiber.Map{
+// 		"message": "Berhasil mengambil laporan",
+// 		"data":    reports,
+// 	})
+// }
+
+
 func (h *Handler) GetWeeklyReports(c *fiber.Ctx) error {
-	user := c.Locals("user").(*models.User)
-
-	reports, err := h.weeklyReportService.GetReports(user.Id)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Gagal mengambil laporan",
-			"error":   err.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "Berhasil mengambil laporan",
-		"data":    reports,
-	})
+    user := c.Locals("user").(*models.User)
+    
+    // Get report type from query parameter
+    reportType := c.Query("type", "student") // Default to student reports
+    
+    switch reportType {
+    case "supervisor":
+        // Get student reports (original WeeklyReport)
+        reports, err := h.weeklyReportService.GetReports(user.Id)
+        if err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "message": "Gagal mengambil laporan",
+                "error":   err.Error(),
+            })
+        }
+        return c.JSON(fiber.Map{
+            "message": "Berhasil mengambil laporan mingguan",
+            "data":    reports,
+        })
+        
+    case "company":
+        // Get company reports
+        companyReports, err := h.weeklyReportService.GetCompanyReports(user.Id)
+        if err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "message": "Gagal mengambil laporan perusahaan",
+                "error":   err.Error(),
+            })
+        }
+        return c.JSON(fiber.Map{
+            "message": "Berhasil mengambil laporan perusahaan",
+            "data":    companyReports,
+        })
+        
+    default:
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "message": "Tipe laporan tidak valid",
+            "error":   "Gunakan 'supervisor' atau 'company'",
+        })
+    }
 }
 
 func (h *Handler) GetWeeklyReportsForSupervisor(c *fiber.Ctx) error {

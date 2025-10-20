@@ -11,6 +11,8 @@ import (
 type MonitoringProgressService interface {
 	GiveFeedback(payload dto.CreateSupervisorFeedbackDTO) error
 	GiveFeedbackCompany(payload dto.CreateCompanyFeedbackDTO) error
+	GetSupervisorFeedback(reportID uint) ([]models.SupervisorMonitoringProgress, error)
+	GetCompanyFeedback(reportID uint) ([]models.CompanyMonitoringProgress, error)
 }
 
 type monitoringProgressService struct {
@@ -117,3 +119,12 @@ func (s *monitoringProgressService) GiveFeedbackCompany(payload dto.CreateCompan
 
 	return nil
 }
+
+func (s *monitoringProgressService) GetSupervisorFeedback(reportID uint) ([]models.SupervisorMonitoringProgress, error) {
+	return s.repo.GetSupervisorFeedbackByReportID(reportID)
+}
+
+func (s *monitoringProgressService) GetCompanyFeedback(reportID uint) ([]models.CompanyMonitoringProgress, error) {
+	return s.repo.GetCompanyFeedbackByReportID(reportID)
+}
+

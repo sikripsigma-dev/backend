@@ -89,6 +89,12 @@ func autoMigrate() {
 		&models.AuthToken{},
 		&models.StudyProgram{},
 		&models.HeadstudyUser{},
+		&models.ResearchCaseValidation{},
+		&models.ResearchCaseValidationComment{},
+		&models.ApprovedResearchCase{},
+		&models.Category{},
+		&models.ResearchCaseCategory{},
+		&models.CategoryProgramRelevance{},
 	)
 
 	if err != nil {
